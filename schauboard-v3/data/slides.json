@@ -1,0 +1,10 @@
+﻿[
+  {
+    "id": "slide_welcome",
+    "name": "Willkommen",
+    "bg_color": "#1a1a2e",
+    "bg_image": "",
+    "duration": 10,
+    "blocks": []
+  }
+]

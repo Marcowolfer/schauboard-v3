@@ -1,0 +1,21 @@
+﻿{
+  "system": {
+    "timezone": "Europe/Zurich",
+    "language": "de",
+    "default_slide_duration": 10,
+    "default_transition": "fade",
+    "offline_timeout_minutes": 5
+  },
+  "weather": {
+    "enabled": true,
+    "location": "Zurich,CH",
+    "provider": "wttr.in"
+  },
+  "maintenance": {
+    "enabled": false,
+    "message": ""
+  },
+  "branding": {
+    "name": "Schauboard"
+  }
+}

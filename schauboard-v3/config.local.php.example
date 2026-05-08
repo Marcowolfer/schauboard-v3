@@ -1,0 +1,6 @@
+﻿<?php
+
+return [
+    'app_env' => 'local',
+    'admin_password_file' => __DIR__ . '/data/admin_password.php',
+];

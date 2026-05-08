@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3dWolf Signage — Bedienungsanleitung</title>
+    <style>
+        :root {
+            --primary: #cba6f7;
+            --header-bg: #1e1e2e;
+            --text-dark: #313244;
+            --text-light: #cdd6f4;
+            --bg-white: #ffffff;
+            --bg-light: #f5f5f7;
+            --border: #e0e0e0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: var(--bg-light);
+        }
+        
+        header {
+            background: var(--header-bg);
+            color: var(--text-light);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 4px solid var(--primary);
+        }
+        
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--bg-white);
+            min-height: calc(100vh - 200px);
+        }
+        
+        section {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        section:last-child {
+            border-bottom: none;
+        }
+        
+        h2 {
+            color: var(--header-bg);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        code {
+            background: var(--bg-light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: var(--primary);
+        }
+        
+        .code-block {
+            background: var(--header-bg);
+            color: var(--text-light);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        
+        ul, ol {
+            margin: 1rem 0 1rem 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .feature-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .feature-card {
+            background: var(--bg-light);
+            padding: 1rem;
+            border-radius: 8px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        
+        .feature-card .icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .shortcut {
+            background: var(--header-bg);
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: bold;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: var(--header-bg);
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            main {
+                max-width: 100%;
+                padding: 1rem;
+            }
+            
+            header {
+                background: #1e1e2e !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .info-box, .warning-box {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            
+            h2 {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🖥️ 3dWolf Signage</h1>
+        <p>Bedienungsanleitung — Digital Signage Editor</p>
+    </header>
+    
+    <main>
+        <section>
+            <h2>🔐 1. Anmeldung</h2>
+            <p>Öffnen Sie den Admin-Bereich im Browser:</p>
+            <div class="code-block">
+                http://192.168.51.21/signage/admin/
+            </div>
+            <div class="info-box">
+                <strong>Passwort:</strong> <code>H0l2bau$</code>
+            </div>
+            <p>Nach der Anmeldung gelangen Sie direkt in den Editor.</p>
+        </section>
+        
+        <section>
+            <h2>🎨 2. Übersicht Editor</h2>
+            <p>Der Editor besteht aus vier Hauptbereichen:</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">📑</div>
+                    <strong>Sidebar</strong><br>
+                    Folien & Ebenen
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🧰</div>
+                    <strong>Toolbar</strong><br>
+                    Block-Typen
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎯</div>
+                    <strong>Canvas</strong><br>
+                    Arbeitsfläche
+                </div>
+                <div class="feature-card">
+                    <div class="icon">⚙️</div>
+                    <strong>Settings-Bar</strong><br>
+                    Globale Einstellungen
+                </div>
+            </div>
+        </section>
+        
+        <section>
+            <h2>📋 3. Folien verwalten</h2>
+            <p>Im linken Panel können Sie Folien organisieren:</p>
+            <ul>
+                <li><strong>➕ Hinzufügen:</strong> Neue Folie erstellen</li>
+                <li><strong>🗂 Duplizieren:</strong> Bestehende Folie kopieren</li>
+                <li><strong>🗑️ Löschen:</strong> Folie entfernen</li>
+                <li><strong>↕️ Reihenfolge:</strong> Per Drag & Drop sortieren</li>
+            </ul>
+            <div class="warning-box">
+                ⚠️ Die erste Folie ist automatisch die <strong>Default-Folie</strong>, die angezeigt wird, wenn keine zeitgesteuerte Folie aktiv ist.
+            </div>
+        </section>
+        
+        <section>
+            <h2>🧱 4. Block-Typen</h2>
+            <p>Es gibt 9 verschiedene Block-Typen:</p>
+            <div class="feature-grid">
+                <div class="feature-card">
+                    <div class="icon">📝</div>
+                    <strong>Text</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📰</div>
+                    <strong>Überschrift</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🖼️</div>
+                    <strong>Bild</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📄</div>
+                    <strong>PDF</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🕐</div>
+                    <strong>Uhr</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🌤️</div>
+                    <strong>Wetter</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">🎬</div>
+                    <strong>Video/YouTube</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📢</div>
+                    <strong>Ticker</strong>
+                </div>
+                <div class="feature-card">
+                    <div class="icon">📊</div>
+                    <strong>Tabelle</strong>
+                </div>
+            </div>
+            <p>Klicken Sie einen Block-Typ in der Toolbar an, um ihn auf der aktuellen Folie zu platzieren.</p>
+        </section>
+        
+        <section>
+            <h2>✏️ 5. Blöcke bearbeiten</h2>
+            <h3>Bearbeiten</h3>
+            <p><strong>Doppelklick</strong> auf einen Block öffnet den Editor mit spezifischen Einstellungen für den Block-Typ.</p>
+            
+            <h3>Position & Größe</h3>
+            <ul>
+                <li><strong>Drag & Drop:</strong> Blöcke mit der Maus verschieben</li>
+                <li><strong>Resize:</strong> An den Ecken ziehen um die Größe zu ändern</li>
+            </ul>
+            
+            <h3>Schutz & Löschen</h3>
+            <ul>
+                <li><strong>🔒 Lock:</strong> Block vor versehentlichem Verschieben schützen</li>
+                <li><strong>🗑️ Löschen:</strong> Block entfernen (nicht rückgängig machbar)</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>📐 6. Snap & Hilfslinien</h2>
+            <p>Beim Verschieben von Blöcken erscheinen <strong>lila Hilfslinien</strong>:</p>
+            <ul>
+                <li>Mittellinie (horizontal & vertikal)</li>
+                <li>Ränder des Canvas</li>
+                <li>Ausrichtung an anderen Blöcken</li>
+            </ul>
+            <div class="info-box">
+                💡 Die Blöcke "snappen" magnetisch an diesen Linien für pixelgenaue Ausrichtung.
+            </div>
+        </section>
+        
+        <section>
+            <h2>🥞 7. Ebenen-Panel</h2>
+            <p>Das Ebenen-Panel zeigt alle Blöcke der aktuellen Folie:</p>
+            <ul>
+                <li><strong>▲ Hoch:</strong> Block nach vorne bringen</li>
+                <li><strong>▼ Runter:</strong> Block nach hinten schieben</li>
+            </ul>
+            <p>Die Reihenfolge bestimmt, welche Blöcke andere überdecken.</p>
+        </section>
+        
+        <section>
+            <h2>⏰ 8. Zeitsteuerung</h2>
+            <p>Jede Folie kann einen Aktivierungszeitraum haben:</p>
+            <ul>
+                <li><strong>Von:</strong> Start-Datum und Uhrzeit</li>
+                <li><strong>Bis:</strong> End-Datum und Uhrzeit</li>
+            </ul>
+            <div class="info-box">
+                <strong>Default-Folien Logik:</strong><br>
+                Ist eine zeitgesteuerte Folie aktiv, wird diese angezeigt. Andernfalls erscheint die erste Folie (Default).
+            </div>
+        </section>
+        
+        <section>
+            <h2>🎨 9. Hintergrund</h2>
+            <p>Pro Folie können Sie folgendes festlegen:</p>
+            <ul>
+                <li><strong>Hintergrundfarbe:</strong> Farbwähler mit Hex-Wert</li>
+                <li><strong>Hintergrundbild:</strong> Bild-Upload für den Folienhintergrund</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>🔄 10. Übergänge & Einstellungen</h2>
+            <h3>Übergänge</h3>
+            <p>Verfügbare Folienübergänge:</p>
+            <ul>
+                <li><strong>Fade:</strong> sanftes Überblenden</li>
+                <li><strong>Slide:</strong> seitliches Gleiten</li>
+                <li><strong>Zoom:</strong> Zoom-Effekt</li>
+            </ul>
+            
+            <h3>Globale Einstellungen</h3>
+            <ul>
+                <li><strong>Foliendauer:</strong> Anzeigedauer pro Folie (in Sekunden)</li>
+                <li><strong>Wetterstadt:</strong> Globale Stadt für alle Wetter-Blöcke</li>
+            </ul>
+        </section>
+        
+        <section>
+            <h2>↩️ 11. Undo/Redo</h2>
+            <p>Änderungen können rückgängig gemacht werden:</p>
+            <ul>
+                <li><strong>Rückgängig:</strong> <span class="shortcut">Ctrl+Z</span></li>
+                <li><strong>Wiederherstellen:</strong> <span class="shortcut">Ctrl+Y</span></li>
+            </ul>
+            <div class="info-box">
+                Maximal 30 Schritte werden gespeichert.
+            </div>
+        </section>
+        
+        <section>
+            <h2>💾 12. Speichern & Live</h2>
+            <p>Speichern Sie Ihre Änderungen:</p>
+            <ul>
+                <li>Tastatur: <span class="shortcut">Ctrl+S</span></li>
+                <li>Button: 💾 Speichern</li>
+            </ul>
+            <div class="info-box">
+                🔄 Nach dem Speichern aktualisiert sich das Display automatisch innerhalb von <strong>5 Sekunden</strong>.
+            </div>
+        </section>
+        
+        <section>
+            <h2>▶️ 13. Vorschau</h2>
+            <p>Mit dem <strong>▶ Vorschau</strong>-Button können Sie testen, wie die Präsentation auf dem Display aussieht.</p>
+            <p>Die Vorschau öffnet sich in einem neuen Tab und zeigt alle Folien mit den konfigurierten Übergängen.</p>
+        </section>
+        
+        <section>
+            <h2>🖥️ 14. Kiosk-Modus</h2>
+            <p>Für dauerhafte Displays verwenden Sie Chrome im Kiosk-Modus:</p>
+            <div class="code-block">
+chrome.exe --kiosk --noerrdialogs --disable-infobars http://192.168.51.21/signage/
+            </div>
+            <p>Dies startet Chrome im Vollbildmodus ohne UI-Elemente, ideal für Info-Displays.</p>
+        </section>
+    </main>
+    
+    <footer>
+        <p>🐺 3dWolf Signage — Digital Signage System</p>
+        <p>Generiert am 17.04.2026</p>
+    </footer>
+</body>
+</html>

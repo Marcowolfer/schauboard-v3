@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3dWolf Signage — Installationsanleitung</title>
+    <style>
+        :root {
+            --primary: #cba6f7;
+            --header-bg: #1e1e2e;
+            --text-dark: #313244;
+            --text-light: #cdd6f4;
+            --bg-white: #ffffff;
+            --bg-light: #f5f5f7;
+            --border: #e0e0e0;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: var(--text-dark);
+            background: var(--bg-light);
+        }
+        
+        header {
+            background: var(--header-bg);
+            color: var(--text-light);
+            padding: 2rem;
+            text-align: center;
+            border-bottom: 4px solid var(--primary);
+        }
+        
+        header h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        header p {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        main {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem;
+            background: var(--bg-white);
+            min-height: calc(100vh - 200px);
+        }
+        
+        section {
+            margin-bottom: 2.5rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        section:last-child {
+            border-bottom: none;
+        }
+        
+        h2 {
+            color: var(--header-bg);
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        h3 {
+            color: var(--primary);
+            font-size: 1.1rem;
+            margin: 1.5rem 0 0.5rem 0;
+        }
+        
+        p {
+            margin-bottom: 1rem;
+        }
+        
+        code {
+            background: var(--bg-light);
+            padding: 0.2rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            color: var(--primary);
+        }
+        
+        .code-block {
+            background: var(--header-bg);
+            color: var(--text-light);
+            padding: 1rem;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            overflow-x: auto;
+            margin: 1rem 0;
+        }
+        
+        .code-block .comment {
+            color: #6c7280;
+        }
+        
+        .info-box {
+            background: linear-gradient(135deg, #f3e8ff 0%, #e9d5ff 100%);
+            border-left: 4px solid var(--primary);
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        
+        .warning-box {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+            border-left: 4px solid #f59e0b;
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        
+        .success-box {
+            background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+            border-left: 4px solid #10b981;
+            padding: 1rem 1.5rem;
+            border-radius: 0 8px 8px 0;
+            margin: 1rem 0;
+        }
+        
+        ul, ol {
+            margin: 1rem 0 1rem 1.5rem;
+        }
+        
+        li {
+            margin-bottom: 0.5rem;
+        }
+        
+        .step-list {
+            counter-reset: step;
+            list-style: none;
+            margin-left: 0;
+        }
+        
+        .step-list li {
+            position: relative;
+            padding-left: 3rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .step-list li::before {
+            counter-increment: step;
+            content: counter(step);
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 2rem;
+            height: 2rem;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        
+        .file-tree {
+            background: var(--bg-light);
+            padding: 1rem 1.5rem;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 0.9em;
+            margin: 1rem 0;
+        }
+        
+        .file-tree .folder {
+            color: var(--primary);
+            font-weight: bold;
+        }
+        
+        .file-tree .file {
+            color: var(--text-dark);
+        }
+        
+        .file-tree ul {
+            list-style: none;
+            margin-left: 1.5rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem;
+            background: var(--header-bg);
+            color: var(--text-light);
+            font-size: 0.9rem;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+        
+        th, td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        th {
+            background: var(--bg-light);
+            font-weight: 600;
+        }
+        
+        @media print {
+            body {
+                background: white;
+            }
+            
+            main {
+                max-width: 100%;
+                padding: 1rem;
+            }
+            
+            header {
+                background: #1e1e2e !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            .info-box, .warning-box, .success-box {
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
+            }
+            
+            section {
+                break-inside: avoid;
+                page-break-inside: avoid;
+            }
+            
+            h2 {
+                break-after: avoid;
+                page-break-after: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>🖥️ 3dWolf Signage</h1>
+        <p>Installationsanleitung — Server-Setup & Konfiguration</p>
+    </header>
+    
+    <main>
+        <section>
+            <h2>📋 1. Voraussetzungen</h2>
+            <p>Für die Installation von 3dWolf Signage benötigen Sie:</p>
+            
+            <h3>Hardware</h3>
+            <ul>
+                <li>Synology NAS (oder alternativer Webserver mit PHP-Unterstützung)</li>
+                <li>Mindestens 100 MB freier Speicherplatz</li>
+                <li>Netzwerkverbindung für den Kiosk-Display-Client</li>
+            </ul>
+            
+            <h3>Software</h3>
+            <ul>
+                <li><strong>PHP 8.x</strong> oder höher</li>
+                <li><strong>Web Station</strong> (bei Synology) oder Apache/Nginx</li>
+                <li>Write-Berechtigungen für den Webserver-Benutzer</li>
+            </ul>
+            
+            <div class="info-box">
+                💡 Auf Synology NAS aktivieren Sie Web Station im Package Center und stellen sicher, dass PHP 8.x installiert ist.
+            </div>
+        </section>
+        
+        <section>
+            <h2>📁 2. Dateistruktur</h2>
+            <p>Das System verwendet folgende Verzeichnisstruktur:</p>
+            
+            <div class="file-tree">
+                <span class="folder">📁 signage/</span>
+                <ul>
+                    <li><span class="file">📄 index.php</span> — Hauptdisplay (Kiosk-Ansicht)</li>
+                    <li><span class="file">📄 weather.php</span> — Wetter-API-Proxy</li>
+                    <li>
+                        <span class="folder">📁 admin/</span>
+                        <ul>
+                            <li><span class="file">📄 index.php</span> — Admin-Editor</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span class="folder">📁 data/</span>
+                        <ul>
+                            <li><span class="file">📄 slides.json</span> — Folien-Konfiguration</li>
+                            <li><span class="file">📄 settings.json</span> — Globale Einstellungen</li>
+                            <li><span class="file">📄 last_update.txt</span> — Zeitstempel für Live-Update</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span class="folder">📁 uploads/</span>
+                        <ul>
+                            <li>Hochgeladene Bilder, Videos und PDFs</li>
+                        </ul>
+                    </li>
+                </ul>
+            </div>
+        </section>
+        
+        <section>
+            <h2>🔧 3. Installation</h2>
+            <p>Folgen Sie diesen Schritten zur Installation:</p>
+            
+            <ol class="step-list">
+                <li>
+                    <strong>Ordner erstellen</strong><br>
+                    Erstellen Sie auf Ihrem Webserver das Verzeichnis <code>signage/</code> im Web-Root (z.B. <code>/web/signage/</code> auf Synology).
+                </li>
+                <li>
+                    <strong>Unterordner anlegen</strong><br>
+                    Erstellen Sie innerhalb von <code>signage/</code> folgende Ordner:
+                    <div class="code-block">
+mkdir admin data uploads
+                    </div>
+                </li>
+                <li>
+                    <strong>Dateien hochladen</strong><br>
+                    Kopieren Sie alle PHP-Dateien in die entsprechenden Verzeichnisse:
+                    <ul>
+                        <li><code>index.php</code> → <code>signage/</code></li>
+                        <li><code>weather.php</code> → <code>signage/</code></li>
+                        <li><code>admin/index.php</code> → <code>signage/admin/</code></li>
+                    </ul>
+                </li>
+                <li>
+                    <strong>Rechte setzen</strong><br>
+                    Setzen Sie Schreibrechte für den Webserver-Benutzer:
+                    <div class="code-block">
+# Synology (im Terminal als admin)
+sudo chmod -R 775 /volume1/web/signage/data
+sudo chmod -R 775 /volume1/web/signage/uploads
+sudo chown -R http:http /volume1/web/signage/data
+sudo chown -R http:http /volume1/web/signage/uploads
+                    </div>
+                </li>
+                <li>
+                    <strong>Browser öffnen</strong><br>
+                    Öffnen Sie im Browser:<br>
+                    <code>http://[Ihre-IP]/signage/admin/</code><br><br>
+                    Die Login-Maske sollte erscheinen.
+                </li>
+            </ol>
+            
+            <div class="success-box">
+                ✓ Bei erfolgreicher Installation sehen Sie die Login-Seite mit Passwortabfrage.
+            </div>
+        </section>
+        
+        <section>
+            <h2>🔐 4. Passwort ändern</h2>
+            <p>Das Admin-Passwort ist in der Datei <code>admin/index.php</code> hinterlegt:</p>
+            
+            <div class="code-block">
+<span class="comment">// Zeile ~7 in admin/index.php</span>
+define('ADMIN_PASSWORD', 'H0l2bau$');
+            </div>
+            
+            <p>So ändern Sie das Passwort:</p>
+            <ol>
+                <li>Öffnen Sie <code>admin/index.php</code> in einem Texteditor</li>
+                <li>Suchen Sie nach Zeile 7 (Definition von <code>ADMIN_PASSWORD</code>)</li>
+                <li>Ersetzen Sie <code>'H0l2bau$'</code> durch Ihr neues Passwort</li>
+                <li>Speichern und wieder hochladen</li>
+            </ol>
+            
+            <div class="warning-box">
+                ⚠️ Verwenden Sie ein sicheres Passwort mit mindestens 12 Zeichen, inklusive Groß- und Kleinbuchstaben, Zahlen und Sonderzeichen.
+            </div>
+        </section>
+        
+        <section>
+            <h2>🖥️ 5. Kiosk-Display einrichten</h2>
+            <p>Für einen Windows-PC als Info-Display:</p>
+            
+            <h3>Chrome Kiosk-Modus</h3>
+            <ol>
+                <li>Erstellen Sie eine Verknüpfung zu Chrome mit folgendem Ziel:
+                    <div class="code-block">
+"C:\Program Files\Google\Chrome\Application\chrome.exe" --kiosk --noerrdialogs --disable-infobars http://192.168.51.21/signage/
+                    </div>
+                </li>
+                <li>Legen Sie diese Verknüpfung im Windows-Autostart-Ordner ab:
+                    <div class="code-block">
+%APPDATA%\Microsoft\Windows\Start Menu\Programs\Startup
+                    </div>
+                </li>
+            </ol>
+            
+            <h3>Windows Autostart-Konfiguration</h3>
+            <ol>
+                <li>Drücken Sie <code>Win + R</code> und geben Sie <code>shell:startup</code> ein</li>
+                <li>Kopieren Sie die Chrome-Verknüpfung in den geöffneten Ordner</li>
+                <li>Beim nächsten Windows-Start startet Chrome automatisch im Kiosk-Modus</li>
+            </ol>
+            
+            <div class="info-box">
+                💡 Der Kiosk-Modus startet Chrome im Vollbild ohne Adressleiste, Tabs oder Buttons. Zum Beenden drücken Sie <code>Alt+F4</code>.
+            </div>
+        </section>
+        
+        <section>
+            <h2>🛠️ 6. Troubleshooting</h2>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Problem</th>
+                        <th>Ursache</th>
+                        <th>Lösung</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Bilder werden nicht angezeigt</td>
+                        <td>Fehlende Schreibrechte</td>
+                        <td>Rechte für <code>uploads/</code> auf 775 setzen und http-Benutzer als Besitzer festlegen</td>
+                    </tr>
+                    <tr>
+                        <td>PDF wird nicht geladen</td>
+                        <td>Veralteter Browser</td>
+                        <td>Chrome/Firefox auf aktuelle Version updaten</td>
+                    </tr>
+                    <tr>
+                        <td>Display aktualisiert nicht</td>
+                        <td>last_update.txt fehlt</td>
+                        <td>Prüfen ob <code>data/last_update.txt</code> existiert und beschreibbar ist</td>
+                    </tr>
+                    <tr>
+                        <td>Login funktioniert nicht</td>
+                        <td>Falsches Passwort</td>
+                        <td>Passwort in <code>admin/index.php</code> überprüfen</td>
+                    </tr>
+                    <tr>
+                        <td>Server Error 500</td>
+                        <td>PHP-Version zu alt</td>
+                        <td>PHP 8.x oder höher installieren (Web Station Einstellungen)</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <h3>Log-Dateien prüfen</h3>
+            <p>Bei Problemen können Sie die PHP-Fehlerlogs einsehen:</p>
+            <div class="code-block">
+# Synology
+/var/log/httpd/apache24-error-log
+
+# Oder PHP-Fehler im Browser aktivieren (temporär in index.php)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+            </div>
+        </section>
+    </main>
+    
+    <footer>
+        <p>🐺 3dWolf Signage — Digital Signage System</p>
+        <p>Generiert am 17.04.2026</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,16 @@
+﻿[
+  {
+    "id": "default",
+    "name": "Standard Display",
+    "default_playlist_id": "playlist_default",
+    "last_seen_at": null,
+    "token": ""
+  },
+  {
+    "id": "empfang",
+    "name": "Empfang",
+    "default_playlist_id": "playlist_default",
+    "last_seen_at": null,
+    "token": ""
+  }
+]

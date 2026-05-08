@@ -1,0 +1,38 @@
+# Build artifacts
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+$RECYCLE.BIN/
+
+# Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Secrets / env
+.env
+.env.local
+.env.*.local
+
+# Schauboard secrets — config.local.php holds real config; only .example is tracked
+config.local.php
+**/config.local.php
+
+# Schauboard runtime state — generated, security-sensitive, or churns
+**/data/admin_password.php
+**/data/cache/
+**/data/weather_*.json
+**/data/last_update.txt
+
+# Dependencies
+vendor/
+node_modules/
+
+# Logs
+*.log
