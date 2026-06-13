@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 
 schauboard_require_admin_session();

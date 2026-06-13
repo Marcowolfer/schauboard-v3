@@ -29,6 +29,13 @@ config.local.php
 **/data/cache/
 **/data/weather_*.json
 **/data/last_update.txt
+**/data/heartbeats.json
+**/data/*.bak.*
+**/data/*.tmp
+
+# Hochgeladene Medien (bleiben lokal, nicht ins Repo)
+**/uploads/*
+!**/uploads/.gitkeep
 
 # Dependencies
 vendor/

@@ -1,5 +1,10 @@
-﻿<?php
+<?php
 
+/**
+ * Schreibt eine Datei atomar: erst in eine .tmp-Datei, dann per rename().
+ * Ein abgebrochener Request oder eine volle Platte hinterlaesst damit nie
+ * eine halb geschriebene (= kaputte) Datei.
+ */
 function schauboard_write_file(string $path, string $contents): bool
 {
     $dir = dirname($path);
@@ -7,7 +12,36 @@ function schauboard_write_file(string $path, string $contents): bool
         return false;
     }
 
-    return file_put_contents($path, $contents, LOCK_EX) !== false;
+    $tmp = $path . '.tmp';
+    if (file_put_contents($tmp, $contents, LOCK_EX) === false) {
+        return false;
+    }
+
+    if (!rename($tmp, $path)) {
+        @unlink($tmp);
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Rotierende Backups: <datei>.bak.1 (neuestes) bis .bak.$keep.
+ */
+function schauboard_rotate_backup(string $path, int $keep = 5): void
+{
+    if (!is_file($path)) {
+        return;
+    }
+
+    for ($i = $keep - 1; $i >= 1; $i--) {
+        $from = "$path.bak.$i";
+        if (is_file($from)) {
+            @rename($from, "$path.bak." . ($i + 1));
+        }
+    }
+
+    @copy($path, "$path.bak.1");
 }
 
 function schauboard_read_json_file(string $path, array $fallback = []): array
@@ -16,12 +50,21 @@ function schauboard_read_json_file(string $path, array $fallback = []): array
         return $fallback;
     }
 
-    $decoded = json_decode((string) file_get_contents($path), true);
+    $raw = (string) file_get_contents($path);
+    // BOM tolerieren: manche Editoren/Transfers schreiben ein UTF-8-BOM,
+    // an dem json_decode sonst scheitern wuerde.
+    $raw = preg_replace('/^\xEF\xBB\xBF/', '', $raw);
+
+    $decoded = json_decode($raw, true);
     return is_array($decoded) ? $decoded : $fallback;
 }
 
-function schauboard_write_json_file(string $path, array $payload): bool
+function schauboard_write_json_file(string $path, array $payload, bool $backup = false): bool
 {
+    if ($backup) {
+        schauboard_rotate_backup($path);
+    }
+
     return schauboard_write_file(
         $path,
         json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)
@@ -132,7 +175,10 @@ function schauboard_read_dataset(string $name): array
 
 function schauboard_write_dataset(string $name, array $payload): bool
 {
-    return schauboard_write_json_file(schauboard_json_path($name), $payload);
+    // Inhalts-Datensaetze bekommen rotierende Backups, damit ein versehentliches
+    // Leerspeichern oder ein kaputter Save rueckholbar bleibt.
+    $backup = in_array($name, ['slides', 'playlists', 'displays', 'schedules', 'templates'], true);
+    return schauboard_write_json_file(schauboard_json_path($name), $payload, $backup);
 }
 
 function schauboard_ensure_data_files(): void
@@ -163,4 +209,19 @@ function schauboard_find_by_id(array $items, string $id): ?array
     }
 
     return null;
+}
+
+/**
+ * Signatur ueber die Inhalts-Dateien. Aendert sie sich, weiss das Display,
+ * dass es neu laden muss (Live-Reload).
+ */
+function schauboard_revision(): string
+{
+    $parts = [];
+    foreach (['slides', 'playlists', 'displays', 'schedules', 'settings'] as $name) {
+        $path = schauboard_json_path($name);
+        $parts[] = is_file($path) ? (string) filemtime($path) : '0';
+    }
+
+    return substr(md5(implode('-', $parts)), 0, 12);
 }

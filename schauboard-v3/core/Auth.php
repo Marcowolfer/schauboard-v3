@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 
 function schauboard_password_file(): string
 {

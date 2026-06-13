@@ -1,4 +1,4 @@
-﻿<?php
+<?php
 $version ??= schauboard_version();
 $authMode = !empty($needsSetup) ? 'setup' : 'login';
 ?><!DOCTYPE html>

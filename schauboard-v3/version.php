@@ -1,7 +1,7 @@
-﻿<?php
+<?php
 
 return [
-    'current' => '3.0.0',
+    'current' => '3.0.0-beta.1',
     'name' => 'Schauboard',
-    'channel' => 'dev',
+    'channel' => 'beta',
 ];

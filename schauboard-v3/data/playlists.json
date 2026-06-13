@@ -1,7 +1,7 @@
-﻿[
-  {
-    "id": "playlist_default",
-    "name": "Standard",
-    "slide_ids": ["slide_welcome"]
-  }
+[
+    {
+        "id": "playlist_default",
+        "name": "Standard",
+        "slide_ids": ["slide_welcome", "slide_infos"]
+    }
 ]
