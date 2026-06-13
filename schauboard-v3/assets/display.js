@@ -18,6 +18,12 @@
   var defaultDuration = Number(cfg.defaultDuration || 10);
   var preview = !!cfg.preview;
 
+  // Schriften aus dem 1920-System auf die tatsaechliche Buehnenbreite skalieren,
+  // damit es auf jeder Aufloesung (nicht nur 1080p) stimmt.
+  function stageScale() {
+    return (stage.clientWidth || 1920) / 1920;
+  }
+
   // Eine Folie als .sb-stage-Ebene rendern.
   function buildSlide(slide) {
     var layer = document.createElement('div');
@@ -30,8 +36,9 @@
     layer.style.background = slide.bg_image
       ? bgColor + ' url(' + slide.bg_image + ') center/cover no-repeat'
       : bgColor;
+    var sc = stageScale();
     (slide.blocks || []).forEach(function (block) {
-      layer.appendChild(Blocks.render(block, 'display'));
+      layer.appendChild(Blocks.render(block, 'display', {scale: sc}));
     });
     return layer;
   }

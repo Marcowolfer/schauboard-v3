@@ -106,8 +106,12 @@ window.SchauboardBlocks = (function () {
   }
 
   // Baut den Innen-Inhalt eines Blocks (ohne Positionierung). mode: 'display' | 'editor'.
-  function renderInner(block, mode) {
+  // opts.scale: Buehnen-Skalierung (z. B. Editor-Canvas 836px / 1920 = 0.435).
+  // Positionen sind in % -> brauchen das nicht; Schriftgroessen sind in px aus
+  // dem 1920-Koordinatensystem -> muessen mit der Buehnenbreite mitskaliert werden.
+  function renderInner(block, mode, opts) {
     var type = block.type || 'text';
+    var sc = (opts && opts.scale) ? opts.scale : 1;
     var inner = document.createElement('div');
     inner.className = 'sb-block-inner';
     inner.style.color = block.color || '#ffffff';
@@ -118,14 +122,14 @@ window.SchauboardBlocks = (function () {
       inner.style.width = (100 / scale) + '%';
       inner.style.height = (100 / scale) + '%';
       inner.style.transform = 'scale(' + scale + ')';
-      inner.style.fontSize = Math.max(10, num(block.font_size, 42)) + 'px';
+      inner.style.fontSize = (Math.max(10, num(block.font_size, 42)) * sc) + 'px';
       inner.style.fontWeight = block.bold || type === 'heading' ? '800' : '700';
       inner.innerHTML = escapeHtml(block.text || (type === 'heading' ? 'Überschrift' : 'Textblock')).replace(/\n/g, '<br>');
       return inner;
     }
 
     if (type === 'clock') {
-      inner.style.fontSize = autoFontSize(block, num(block.font_size, 96), 360, 150) + 'px';
+      inner.style.fontSize = (autoFontSize(block, num(block.font_size, 96), 360, 150) * sc) + 'px';
       inner.dataset.clock = '1';
       inner.dataset.clockFormat = block.clock_format || 'HH:MM';
       inner.dataset.showDate = block.show_date ? '1' : '';
@@ -148,7 +152,7 @@ window.SchauboardBlocks = (function () {
     }
 
     if (type === 'weather') {
-      var wFont = autoFontSize(block, num(block.font_size, 40), 460, 360);
+      var wFont = autoFontSize(block, num(block.font_size, 40), 460, 360) * sc;
       inner.dataset.weather = '1';
       inner.dataset.city = block.city || 'Zurich';
       inner.innerHTML =
@@ -163,9 +167,9 @@ window.SchauboardBlocks = (function () {
       var duration = Math.max(4, Math.round(2400 / Math.max(10, num(block.speed, 60))));
       var track = document.createElement('div');
       track.className = 'sb-ticker-track';
-      track.style.fontSize = Math.max(12, num(block.font_size, 48)) + 'px';
+      track.style.fontSize = (Math.max(12, num(block.font_size, 48)) * sc) + 'px';
       track.style.animationDuration = duration + 's';
-      track.style.padding = '0 60px';
+      track.style.padding = '0 ' + (60 * sc) + 'px';
       track.textContent = block.text || 'Laufband';
       inner.appendChild(track);
       return inner;
@@ -173,7 +177,7 @@ window.SchauboardBlocks = (function () {
 
     if (type === 'table') {
       var rows = Array.isArray(block.table_data) ? block.table_data : [];
-      var fs = Math.max(10, num(block.font_size, 30));
+      var fs = Math.max(10, num(block.font_size, 30)) * sc;
       var html = '<table style="font-size:' + fs + 'px;">';
       rows.forEach(function (row, ri) {
         html += '<tr>';
@@ -229,7 +233,7 @@ window.SchauboardBlocks = (function () {
       if (block.label) {
         var label = document.createElement('div');
         label.className = 'sb-qr-label';
-        label.style.fontSize = Math.max(12, num(block.font_size, 30)) + 'px';
+        label.style.fontSize = (Math.max(12, num(block.font_size, 30)) * sc) + 'px';
         label.textContent = block.label;
         inner.appendChild(label);
       }
@@ -237,7 +241,7 @@ window.SchauboardBlocks = (function () {
     }
 
     if (type === 'countdown') {
-      var cdFont = autoFontSize(block, num(block.font_size, 80), 560, 240);
+      var cdFont = autoFontSize(block, num(block.font_size, 80), 560, 240) * sc;
       inner.dataset.countdown = '1';
       inner.dataset.target = block.target || '';
       var value = document.createElement('div');
@@ -260,13 +264,13 @@ window.SchauboardBlocks = (function () {
   }
 
   // Komplett positionierter Block (Wrapper + Inhalt).
-  function render(block, mode) {
+  function render(block, mode, opts) {
     var node = document.createElement('div');
     node.className = 'sb-block ' + (block.type || 'text');
     node.dataset.blockId = block.id || '';
     if (block.type === 'ticker' && block.bg) node.style.background = block.bg;
     applyPosition(node, block);
-    node.appendChild(renderInner(block, mode));
+    node.appendChild(renderInner(block, mode, opts));
     return node;
   }
 

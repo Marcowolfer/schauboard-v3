@@ -13,6 +13,31 @@ const TYPE_FIELDS = {
   countdown: ['type','target','clabel','font_size','color','advanced'],
 };
 
+/* In die Zwischenablage kopieren – mit Fallback fuer HTTP (kein navigator.clipboard
+   ausserhalb von HTTPS/localhost, z. B. auf dem NAS unter http://<ip>/). */
+async function copyText(text) {
+  if (navigator.clipboard && window.isSecureContext) {
+    try { await navigator.clipboard.writeText(text); return true; } catch (e) { /* fallback unten */ }
+  }
+  try {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.top = '-1000px';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0, text.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(ta);
+    return ok;
+  } catch (e) {
+    return false;
+  }
+}
+
 /* ===================== EDITOR ===================== */
 function getSlide() { return state.slides.find(s => s.id === state.selectedSlideId) || null; }
 function getBlock() { const s = getSlide(); return s ? (s.blocks || []).find(b => b.id === state.selectedBlockId) || null : null; }
@@ -155,8 +180,10 @@ function renderCanvas() {
   if (!s) { canvas.style.background = '#1a1a2e'; canvas.innerHTML = '<div class="canvas-empty">Lege links eine Folie an und ziehe Module aus der Leiste hierher.</div>'; return; }
   canvas.style.background = s.bg_image ? `${s.bg_color || '#1a1a2e'} url(${s.bg_image}) center/cover no-repeat` : (s.bg_color || '#1a1a2e');
 
+  // Schriften aus dem 1920-Koordinatensystem auf die Canvas-Breite herunterskalieren.
+  const scale = (canvas.clientWidth || 1920) / 1920;
   (s.blocks || []).forEach(block => {
-    const node = B.render(block, 'editor');
+    const node = B.render(block, 'editor', {scale});
     node.dataset.blockId = block.id;
     attachBlockPointer(node, block);
     if (block.id === state.selectedBlockId) decorateSelected(node, block);
@@ -463,7 +490,18 @@ function initDisplays() {
       card.querySelector('[data-id]').addEventListener('input', e => { d.id = slug(e.target.value); render(); });
       card.querySelector('[data-token]').addEventListener('input', e => { d.token = e.target.value; });
       card.querySelector('[data-copy]').addEventListener('click', async () => {
-        try { await navigator.clipboard.writeText(url); toast('URL kopiert ✓'); } catch (e) { toast('Kopieren nicht möglich – URL markieren.', 'err'); }
+        const ok = await copyText(url);
+        if (ok) { toast('URL kopiert ✓'); return; }
+        // Fallback: URL markieren, damit der Nutzer mit Strg+C kopieren kann.
+        const pill = card.querySelector('.url-pill');
+        if (pill) {
+          const range = document.createRange();
+          range.selectNodeContents(pill);
+          const sel = window.getSelection();
+          sel.removeAllRanges();
+          sel.addRange(range);
+        }
+        toast('URL ist markiert – mit Strg+C kopieren.', 'err');
       });
       container.appendChild(card);
     });
@@ -636,6 +674,13 @@ function initEditor() {
   };
   canvas.addEventListener('pointerup', stop);
   canvas.addEventListener('pointerleave', () => { if (state.drag || state.resize) stop(); });
+
+  // Schriften bei Fenstergroessen-Aenderung neu an die Canvas-Breite anpassen.
+  let _resizeTimer = null;
+  window.addEventListener('resize', () => {
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(() => { if (getSlide()) renderCanvas(); }, 150);
+  });
 
   // Modal
   document.getElementById('mType').innerHTML = Object.keys(B.TYPES).map(t => `<option value="${t}">${esc(B.TYPES[t].label)}</option>`).join('');

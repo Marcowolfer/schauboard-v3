@@ -226,7 +226,19 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .toast.ok{border-color:rgba(115,223,196,.4)}
 .toast.err{border-color:rgba(255,142,161,.45);color:#ffd8df}
 @keyframes toast-in{from{transform:translateY(8px);opacity:0}to{transform:none;opacity:1}}
-@media (max-width:1100px){.layout{grid-template-columns:1fr}.sidebar{border-right:none;border-bottom:1px solid var(--line)}.nav{grid-auto-flow:column;overflow:auto}.editor-workspace{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}}
+@media (max-width:1100px){
+  body{height:auto;overflow:auto}
+  .shell{height:auto}
+  .layout{grid-template-columns:1fr}
+  .sidebar{border-right:none;border-bottom:1px solid var(--line);overflow:visible}
+  .nav{grid-auto-flow:column;overflow:auto}
+  .content{overflow:visible}
+  .content>.card{overflow:visible}
+  .editor-card{display:block}
+  .editor-workspace{grid-template-columns:1fr;display:block}
+  .editor-stage-wrap{min-height:56vh}
+  .form-grid{grid-template-columns:1fr}
+}
 </style>
 </head>
 <body>
