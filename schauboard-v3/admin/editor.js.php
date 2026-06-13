@@ -473,7 +473,7 @@ function initDisplays() {
           <label class="field">Zeigt Playlist<select data-playlist>${playlistOptions(d.default_playlist_id)}</select></label>
         </div>
         <div class="url-row">
-          <span class="url-pill" title="${esc(url)}">${esc(url)}</span>
+          <input class="url-pill" type="text" readonly value="${esc(url)}" title="Klicken markiert die URL – dann Strg+C" onclick="this.select();this.setSelectionRange(0,this.value.length);">
           <button type="button" class="btn small" data-copy>📋 URL kopieren</button>
           <a class="btn small" href="${esc(url)}" target="_blank" rel="noreferrer">↗ Öffnen</a>
           <img alt="QR" width="56" height="56" style="border-radius:8px;background:#fff;padding:3px;" src="${esc(B.qrSrc(url, 120))}">
@@ -492,15 +492,9 @@ function initDisplays() {
       card.querySelector('[data-copy]').addEventListener('click', async () => {
         const ok = await copyText(url);
         if (ok) { toast('URL kopiert ✓'); return; }
-        // Fallback: URL markieren, damit der Nutzer mit Strg+C kopieren kann.
+        // Fallback: URL-Feld markieren, damit der Nutzer mit Strg+C kopieren kann.
         const pill = card.querySelector('.url-pill');
-        if (pill) {
-          const range = document.createRange();
-          range.selectNodeContents(pill);
-          const sel = window.getSelection();
-          sel.removeAllRanges();
-          sel.addRange(range);
-        }
+        if (pill && pill.select) { pill.focus(); pill.select(); pill.setSelectionRange(0, pill.value.length); }
         toast('URL ist markiert – mit Strg+C kopieren.', 'err');
       });
       container.appendChild(card);
