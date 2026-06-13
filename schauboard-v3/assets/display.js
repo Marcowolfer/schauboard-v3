@@ -38,7 +38,7 @@
       : bgColor;
     var sc = stageScale();
     (slide.blocks || []).forEach(function (block) {
-      layer.appendChild(Blocks.render(block, 'display', {scale: sc}));
+      layer.appendChild(Blocks.render(block, 'display', {scale: sc, defaultCity: cfg.weatherLocation}));
     });
     return layer;
   }

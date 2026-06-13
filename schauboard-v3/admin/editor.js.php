@@ -195,8 +195,9 @@ function renderCanvas() {
 
   // Schriften aus dem 1920-Koordinatensystem auf die Canvas-Breite herunterskalieren.
   const scale = (canvas.clientWidth || 1920) / 1920;
+  const defaultCity = (APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich';
   (s.blocks || []).forEach(block => {
-    const node = B.render(block, 'editor', {scale});
+    const node = B.render(block, 'editor', {scale, defaultCity});
     node.dataset.blockId = block.id;
     attachBlockPointer(node, block);
     if (block.id === state.selectedBlockId) decorateSelected(node, block);
@@ -325,6 +326,7 @@ function openModal(blockId) {
   document.getElementById('mSrc').value = b.src || '';
   document.getElementById('mFit').value = b.fit || 'cover';
   document.getElementById('mCity').value = b.city || '';
+  document.getElementById('mCity').placeholder = 'Standardort: ' + ((APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich');
   document.getElementById('mClockFormat').value = b.clock_format || 'HH:MM';
   document.getElementById('mShowDate').checked = !!b.show_date;
   document.getElementById('mSpeed').value = Number(b.speed || 60);
@@ -366,7 +368,7 @@ function applyModal() {
   if (t === 'ticker') { b.text = document.getElementById('mText').value; b.speed = Number(document.getElementById('mSpeed').value || 60); b.bg = document.getElementById('mBg').value.trim() || '#313244'; }
   if (t === 'image') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
   if (t === 'clock') { b.clock_format = document.getElementById('mClockFormat').value; b.show_date = document.getElementById('mShowDate').checked; }
-  if (t === 'weather') { b.city = document.getElementById('mCity').value.trim() || 'Zurich'; }
+  if (t === 'weather') { b.city = document.getElementById('mCity').value.trim(); } // leer = globalen Standardort nutzen
   if (t === 'webpage') { b.url = document.getElementById('mUrl').value.trim(); b.refresh_minutes = Number(document.getElementById('mRefresh').value || 0); b.zoom = Number(document.getElementById('mZoom').value || 100); }
   if (t === 'qrcode') { b.data = document.getElementById('mData').value.trim(); b.label = document.getElementById('mQLabel').value.trim(); }
   if (t === 'countdown') { b.target = document.getElementById('mTarget').value; b.label = document.getElementById('mCLabel').value.trim(); }

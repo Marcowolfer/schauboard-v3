@@ -74,6 +74,7 @@ $displayConfig = [
     'transition' => $settings['system']['default_transition'] ?? 'fade',
     'defaultDuration' => (int) ($settings['system']['default_slide_duration'] ?? 10),
     'weatherEndpoint' => ($settings['weather']['enabled'] ?? true) ? $rootBase . 'api/weather.php' : '',
+    'weatherLocation' => $settings['weather']['location'] ?? 'Zurich',
     'heartbeatEndpoint' => $rootBase . 'api/heartbeat.php',
     'revisionEndpoint' => $rootBase . 'api/revision.php',
     'revision' => is_array($display) ? schauboard_display_revision($display, $schedules, $now) : schauboard_revision(),

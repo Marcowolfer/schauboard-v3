@@ -59,7 +59,7 @@ window.SchauboardBlocks = (function () {
     if (type === 'heading') { base.text = 'Überschrift'; base.bold = true; }
     if (type === 'clock') { base.clock_format = 'HH:MM'; base.show_date = false; }
     if (type === 'image') { base.src = ''; base.fit = 'cover'; }
-    if (type === 'weather') { base.city = 'Zurich'; base.font_size = 40; }
+    if (type === 'weather') { base.city = ''; base.font_size = 40; } // leer = globalen Standardort aus den Einstellungen nutzen
     if (type === 'ticker') { base.text = 'Willkommen bei Schauboard – hier läuft Ihr Lauftext.'; base.speed = 60; base.bg = '#313244'; base.font_size = 48; }
     if (type === 'table') {
       base.table_data = [['Produkt', 'Preis'], ['Kaffee', 'CHF 4.50'], ['Tee', 'CHF 3.80']];
@@ -153,11 +153,13 @@ window.SchauboardBlocks = (function () {
 
     if (type === 'weather') {
       var wFont = autoFontSize(block, num(block.font_size, 40), 460, 360) * sc;
+      // Eigene Stadt am Block hat Vorrang, sonst globaler Standardort aus den Einstellungen.
+      var wCity = (block.city && String(block.city).trim()) || (opts && opts.defaultCity) || 'Zurich';
       inner.dataset.weather = '1';
-      inner.dataset.city = block.city || 'Zurich';
+      inner.dataset.city = wCity;
       inner.innerHTML =
         '<div class="sb-w-emoji" style="font-size:' + (wFont * 2.2) + 'px">⛅</div>' +
-        '<div class="sb-w-city" style="font-size:' + wFont + 'px">' + escapeHtml(block.city || 'Zurich') + '</div>' +
+        '<div class="sb-w-city" style="font-size:' + wFont + 'px">' + escapeHtml(wCity) + '</div>' +
         '<div class="sb-w-temp" style="font-size:' + (wFont * 1.6) + 'px">-- °C</div>' +
         '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">Lädt…</div>';
       return inner;
