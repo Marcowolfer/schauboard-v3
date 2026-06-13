@@ -14,34 +14,18 @@ $isPreview = isset($_GET['preview']);
 $requestedDisplayId = schauboard_sanitize_id($_GET['display'] ?? 'default', 'default');
 $display = schauboard_find_by_id($displays, $requestedDisplayId) ?? ($displays[0] ?? null);
 $displayId = $display['id'] ?? 'default';
-$playlistId = $display['default_playlist_id'] ?? 'playlist_default';
+$defaultPlaylistId = $display['default_playlist_id'] ?? 'playlist_default';
 
-// Zeitsteuerung: aktives Zeitfenster ueberschreibt die Standard-Playlist.
+// Zeitsteuerung: aktives Zeitfenster ueberschreibt die Standard-Playlist
+// (gemeinsame Logik mit revision.php, inkl. Mitternachts-Fenster).
 $timezone = $settings['system']['timezone'] ?? 'Europe/Zurich';
 try {
     $now = new DateTime('now', new DateTimeZone($timezone));
 } catch (Exception $e) {
     $now = new DateTime('now');
 }
-$dayMap = ['Mon' => 'mon', 'Tue' => 'tue', 'Wed' => 'wed', 'Thu' => 'thu', 'Fri' => 'fri', 'Sat' => 'sat', 'Sun' => 'sun'];
-$dayKey = $dayMap[$now->format('D')] ?? 'mon';
-$currentTime = $now->format('H:i');
-
-foreach ($schedules as $candidate) {
-    if (($candidate['display_id'] ?? '') !== $displayId) {
-        continue;
-    }
-    $days = $candidate['days'] ?? [];
-    if ($days !== [] && !in_array($dayKey, $days, true)) {
-        continue;
-    }
-    $from = (string) ($candidate['from'] ?? '00:00');
-    $to = (string) ($candidate['to'] ?? '23:59');
-    if ($currentTime >= $from && $currentTime <= $to) {
-        $playlistId = $candidate['playlist_id'] ?? $playlistId;
-        break;
-    }
-}
+$playlistId = is_array($display) ? schauboard_active_playlist_id($display, $schedules, $now) : $defaultPlaylistId;
+$playlistNotFound = false;
 
 // Vorschau aus dem Editor: ?preview=1 zeigt genau eine uebergebene Folie
 // (aus der Session abgelegter Entwurf), ohne Rotation/Heartbeat.
@@ -59,7 +43,16 @@ if ($isPreview) {
     }
     $maintenance = false;
 } else {
-    $playlist = schauboard_find_by_id($playlists, $playlistId) ?? ($playlists[0] ?? null);
+    // Zugewiesene/geplante Playlist suchen; wenn sie fehlt, auf die Display-
+    // Standard-Playlist zurueckfallen (NICHT blind auf irgendeine erste Playlist,
+    // sonst zeigt das Display fremden Inhalt). Existiert auch die nicht: Leeransicht.
+    $playlist = schauboard_find_by_id($playlists, $playlistId);
+    if ($playlist === null && $playlistId !== $defaultPlaylistId) {
+        $playlist = schauboard_find_by_id($playlists, $defaultPlaylistId);
+    }
+    if ($playlist === null) {
+        $playlistNotFound = true;
+    }
     foreach (($playlist['slide_ids'] ?? []) as $slideId) {
         $slide = schauboard_find_by_id($slides, (string) $slideId);
         if ($slide !== null) {
@@ -83,9 +76,11 @@ $displayConfig = [
     'weatherEndpoint' => ($settings['weather']['enabled'] ?? true) ? $rootBase . 'api/weather.php' : '',
     'heartbeatEndpoint' => $rootBase . 'api/heartbeat.php',
     'revisionEndpoint' => $rootBase . 'api/revision.php',
-    'revision' => schauboard_revision(),
+    'revision' => is_array($display) ? schauboard_display_revision($display, $schedules, $now) : schauboard_revision(),
     'preview' => $isPreview,
-    'emptyMessage' => 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.',
+    'emptyMessage' => $playlistNotFound
+        ? 'Zugewiesene Playlist nicht gefunden – bitte im Admin pruefen.'
+        : 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.',
 ];
 
 $pageTitle = $maintenance ? 'Wartung' : ($display['name'] ?? 'Schauboard Display');

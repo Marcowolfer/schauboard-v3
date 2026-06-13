@@ -79,6 +79,11 @@ Heartbeat (Schwelle in den Einstellungen). Ohne jede Einrichtung laeuft ein `def
 
 - Admin-Passwort als bcrypt-Hash in `data/admin_password.php` (nicht im Repo). Reset = Datei loeschen.
 - Schreibzugriff von PHP auf `data/` und `uploads/` noetig.
-- `data/` sollte nicht oeffentlich gelistet werden (Webserver-Regel empfohlen).
+- `data/` darf nicht oeffentlich abrufbar sein. Fuer **Apache** wird automatisch eine
+  `data/.htaccess` (`Require all denied`) angelegt. Fuer **Nginx** diese Regel ergaenzen:
+  ```nginx
+  location ^~ /data/ { deny all; return 404; }
+  ```
+- Login regeneriert die Session-ID (gegen Fixation); Session-Cookie ist HttpOnly/SameSite=Lax.
 
 Siehe [docs/TESTING.md](docs/TESTING.md) fuer die Abnahme-Checkliste.

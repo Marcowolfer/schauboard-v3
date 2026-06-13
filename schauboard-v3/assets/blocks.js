@@ -167,8 +167,9 @@ window.SchauboardBlocks = (function () {
       var duration = Math.max(4, Math.round(2400 / Math.max(10, num(block.speed, 60))));
       var track = document.createElement('div');
       track.className = 'sb-ticker-track';
+      track.dataset.speed = String(num(block.speed, 60));
       track.style.fontSize = (Math.max(12, num(block.font_size, 48)) * sc) + 'px';
-      track.style.animationDuration = duration + 's';
+      track.style.animationDuration = duration + 's'; // Startwert; applyLive korrigiert nach Layout
       track.style.padding = '0 ' + (60 * sc) + 'px';
       track.textContent = block.text || 'Laufband';
       inner.appendChild(track);
@@ -229,6 +230,8 @@ window.SchauboardBlocks = (function () {
       var img = document.createElement('img');
       img.src = qrSrc(block.data, size);
       img.alt = 'QR-Code';
+      // QR wird extern erzeugt (api.qrserver.com) -> im Offline-LAN sichtbarer Hinweis statt leerem Kasten.
+      img.onerror = function () { inner.innerHTML = '<div class="sb-block-empty">QR-Code offline nicht verfügbar</div>'; };
       inner.appendChild(img);
       if (block.label) {
         var label = document.createElement('div');
@@ -329,10 +332,16 @@ window.SchauboardBlocks = (function () {
   }
 
   function paintWeather(el, data) {
-    if (!data || data.error) return;
     var emoji = el.querySelector('.sb-w-emoji');
     var temp = el.querySelector('.sb-w-temp');
     var desc = el.querySelector('.sb-w-desc');
+    if (!data || data.error) {
+      // Sichtbarer Offline-Zustand statt dauerhaftem "Laedt…" (typisch im reinen LAN ohne Internet).
+      if (emoji) emoji.textContent = '🌐';
+      if (temp) temp.textContent = '–';
+      if (desc) desc.textContent = 'Wetter offline';
+      return;
+    }
     if (emoji && data.emoji) emoji.textContent = data.emoji;
     if (temp) temp.textContent = data.temp_c + ' °C';
     if (desc) desc.textContent = data.desc || '';
@@ -344,15 +353,23 @@ window.SchauboardBlocks = (function () {
       var city = el.dataset.city || 'Zurich';
       var cached = weatherCache.get(city);
       if (cached) paintWeather(el, cached.data);
-      if (cached && (Date.now() - cached.at) < WEATHER_TTL) return;
+      // Gueltige Daten 9 Min cachen; Fehler nur 1 Min, damit es nach Netz-Rueckkehr schnell heilt.
+      if (cached && !cached.err && (Date.now() - cached.at) < WEATHER_TTL) return;
+      if (cached && cached.err && (Date.now() - cached.at) < 60000) return;
       if (weatherPending.has(city)) return; // bereits ein Request unterwegs
       weatherPending.add(city);
       fetch(endpoint + '?city=' + encodeURIComponent(city))
         .then(function (r) { return r.json(); })
         .then(function (data) {
-          weatherCache.set(city, {at: Date.now(), data: data});
+          weatherCache.set(city, {at: Date.now(), data: data, err: !data || !!data.error});
           document.querySelectorAll('[data-weather]').forEach(function (node) {
             if ((node.dataset.city || 'Zurich') === city) paintWeather(node, data);
+          });
+        })
+        .catch(function () {
+          weatherCache.set(city, {at: Date.now(), data: {error: true}, err: true});
+          document.querySelectorAll('[data-weather]').forEach(function (node) {
+            if ((node.dataset.city || 'Zurich') === city) paintWeather(node, {error: true});
           });
         })
         .catch(function () {})
@@ -373,12 +390,25 @@ window.SchauboardBlocks = (function () {
     });
   }
 
+  // Ticker-Dauer nach dem Layout aus der echten Track-Breite berechnen, damit die
+  // Lesegeschwindigkeit konstant bleibt (unabhaengig von Textlaenge/Aufloesung).
+  function setupTickers(root) {
+    root.querySelectorAll('.sb-ticker-track').forEach(function (track) {
+      var speed = Number(track.dataset.speed) || 60;
+      var pxPerSec = Math.max(20, speed * 2); // speed 60 -> 120 px/s
+      var trackW = track.scrollWidth || track.offsetWidth || 600;
+      var dur = Math.max(4, (trackW * 2) / pxPerSec); // Keyframe laeuft 100% -> -100% = 2x Trackbreite
+      track.style.animationDuration = dur.toFixed(1) + 's';
+    });
+  }
+
   // Startet/aktualisiert alle Live-Elemente unter root.
   function applyLive(root, opts) {
     opts = opts || {};
     startGlobalLive();
     if (opts.weatherEndpoint) loadWeather(root, opts.weatherEndpoint);
     setupWebpageRefresh(root);
+    setupTickers(root);
   }
 
   return {

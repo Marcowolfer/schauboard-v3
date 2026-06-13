@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 
+session_set_cookie_params(['httponly' => true, 'samesite' => 'Lax']);
 session_start();
 schauboard_ensure_data_files();
 
@@ -27,6 +28,7 @@ if ($needsSetup && isset($_POST['setup_password'])) {
         if (!$hash || !schauboard_store_password_hash($hash)) {
             $setupError = 'Die Passwortdatei konnte nicht gespeichert werden.';
         } else {
+            session_regenerate_id(true); // gegen Session-Fixation
             $_SESSION['schauboard_admin_auth'] = true;
             header('Location: ' . $_SERVER['PHP_SELF']);
             exit;
@@ -36,6 +38,7 @@ if ($needsSetup && isset($_POST['setup_password'])) {
 
 if (!$needsSetup && isset($_POST['login_password'])) {
     if (schauboard_password_matches((string) $_POST['login_password'], $storedHash)) {
+        session_regenerate_id(true); // gegen Session-Fixation
         $_SESSION['schauboard_admin_auth'] = true;
         header('Location: ' . $_SERVER['PHP_SELF']);
         exit;
@@ -427,7 +430,6 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <details class="full" data-f="advanced">
         <summary class="muted" style="cursor:pointer;">Position & Grösse</summary>
         <div class="form-grid" style="margin-top:12px;">
-          <label class="field">Block-ID<input type="text" id="mId"></label>
           <label class="field">X<input type="number" id="mX" min="0" max="1900"></label>
           <label class="field">Y<input type="number" id="mY" min="0" max="1060"></label>
           <label class="field">Breite<input type="number" id="mW" min="40" max="1920"></label>

@@ -13,6 +13,16 @@ const TYPE_FIELDS = {
   countdown: ['type','target','clabel','font_size','color','advanced'],
 };
 
+/* Schutz vor Datenverlust: ungespeicherte Aenderungen markieren und beim
+   Verlassen/Wechseln der Seite warnen. markDirty() bei jeder Mutation,
+   clearDirty() nach erfolgreichem Speichern. */
+let _dirty = false;
+function markDirty() { _dirty = true; }
+function clearDirty() { _dirty = false; }
+window.addEventListener('beforeunload', function (e) {
+  if (_dirty) { e.preventDefault(); e.returnValue = ''; return ''; }
+});
+
 /* In die Zwischenablage kopieren – mit Fallback fuer HTTP (kein navigator.clipboard
    ausserhalb von HTTPS/localhost, z. B. auf dem NAS unter http://<ip>/). */
 async function copyText(text) {
@@ -77,6 +87,7 @@ function addBlock(type, pos) {
   s.blocks = s.blocks || [];
   s.blocks.push(b);
   state.selectedBlockId = b.id;
+  markDirty();
   renderEditor();
 }
 
@@ -121,6 +132,7 @@ function renderSlidesList() {
       if (state.slides.length <= 1) { toast('Mindestens eine Folie nötig.', 'err'); return; }
       state.slides = state.slides.filter(x => x.id !== s.id);
       if (state.selectedSlideId === s.id) state.selectedSlideId = state.slides[0].id;
+      markDirty();
       renderEditor();
     });
     btn.appendChild(del);
@@ -170,6 +182,7 @@ function moveBlock(id, dir) {
   s.blocks[i] = s.blocks[j];
   s.blocks[j] = tmp;
   state.selectedBlockId = id;
+  markDirty();
   renderEditor();
 }
 
@@ -229,11 +242,11 @@ function decorateSelected(node, block) {
     dup.id = uid('block_');
     dup.x = clamp(Number(block.x || 0) + 40, 0, 1900);
     dup.y = clamp(Number(block.y || 0) + 40, 0, 1060);
-    s.blocks.push(dup); state.selectedBlockId = dup.id; renderEditor();
+    s.blocks.push(dup); state.selectedBlockId = dup.id; markDirty(); renderEditor();
   }));
   menu.appendChild(mk('🗑', 'Löschen', 'danger', () => {
     s.blocks = s.blocks.filter(x => x.id !== block.id);
-    state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; renderEditor();
+    state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; markDirty(); renderEditor();
   }));
   node.appendChild(menu);
 
@@ -331,7 +344,6 @@ function openModal(blockId) {
   document.getElementById('mHeaderColor').value = b.header_color || '#cba6f7';
   document.getElementById('mCellColor').value = b.cell_color || '#ffffff';
   document.getElementById('mBorderColor').value = b.border_color || '#45475a';
-  document.getElementById('mId').value = b.id || '';
   document.getElementById('mX').value = Number(b.x || 0);
   document.getElementById('mY').value = Number(b.y || 0);
   document.getElementById('mW').value = Number(b.w || 0);
@@ -365,17 +377,22 @@ function applyModal() {
     b.cell_color = document.getElementById('mCellColor').value.trim() || '#ffffff';
     b.border_color = document.getElementById('mBorderColor').value.trim() || '#45475a';
   }
-  b.font_size = Number(document.getElementById('mFont').value || 42);
-  b.color = document.getElementById('mColor').value.trim() || '#ffffff';
-  b.align = document.getElementById('mAlign').value;
-  const nid = document.getElementById('mId').value.trim();
-  if (nid) b.id = nid;
-  b.x = clamp(Number(document.getElementById('mX').value || 0), 0, 1900);
-  b.y = clamp(Number(document.getElementById('mY').value || 0), 0, 1060);
+  // Gemeinsame Felder nur schreiben, wenn der Typ sie ueberhaupt nutzt
+  // (keine Geisterwerte auf Bild/Webseite).
+  const fields = TYPE_FIELDS[t] || [];
+  if (fields.includes('font_size')) b.font_size = Number(document.getElementById('mFont').value || 42);
+  if (fields.includes('color')) b.color = document.getElementById('mColor').value.trim() || '#ffffff';
+  if (fields.includes('align')) b.align = document.getElementById('mAlign').value;
+  // Groesse zuerst, dann Position so begrenzen, dass der Block in der Buehne bleibt.
   b.w = clamp(Number(document.getElementById('mW').value || 40), 40, 1920);
   b.h = clamp(Number(document.getElementById('mH').value || 40), 40, 1080);
-  if (oldType !== b.type || !b.base_w || !b.base_h) { b.base_w = b.w; b.base_h = b.h; }
+  b.x = clamp(Number(document.getElementById('mX').value || 0), 0, 1920 - b.w);
+  b.y = clamp(Number(document.getElementById('mY').value || 0), 0, 1080 - b.h);
+  // base_w/base_h (Text-Skalierung) nur bei echtem Text<->Heading-Wechsel oder wenn fehlend zuruecksetzen.
+  const scalable = (x) => x === 'text' || x === 'heading';
+  if (!b.base_w || !b.base_h || (scalable(oldType) !== scalable(b.type))) { b.base_w = b.w; b.base_h = b.h; }
   state.selectedBlockId = b.id;
+  markDirty();
   closeModal();
   renderEditor();
 }
@@ -399,6 +416,7 @@ function renderTableGrid() {
     inp.addEventListener('input', () => {
       const r = Number(inp.dataset.r), c = Number(inp.dataset.c);
       if (state.tableDraft[r]) state.tableDraft[r][c] = inp.value;
+      markDirty();
     });
   });
 }
@@ -412,7 +430,9 @@ function initPlaylists() {
   const container = document.getElementById('itemContainer');
   function render() {
     container.innerHTML = '';
-    if (!state.playlists.length) document.getElementById('emptyHint').style.display = 'none';
+    const hint = document.getElementById('emptyHint');
+    if (!state.playlists.length) { hint.style.display = 'block'; hint.textContent = 'Noch keine Playlists – mit „+ Playlist" eine anlegen.'; }
+    else hint.style.display = 'none';
     state.playlists.forEach(pl => {
       const card = document.createElement('article');
       card.className = 'item-card';
@@ -426,20 +446,21 @@ function initPlaylists() {
         <label class="field">Name<input type="text" data-name value="${esc(pl.name || '')}"></label>
         <div><div class="muted" style="margin-bottom:8px;">Folien in dieser Playlist (Reihenfolge = Editor-Reihenfolge):</div>
           <div class="slide-picker">${picker}</div></div>`;
-      card.querySelector('[data-del]').addEventListener('click', () => { state.playlists = state.playlists.filter(x => x !== pl); render(); });
-      card.querySelector('[data-name]').addEventListener('input', e => { pl.name = e.target.value; });
+      card.querySelector('[data-del]').addEventListener('click', () => { state.playlists = state.playlists.filter(x => x !== pl); markDirty(); render(); });
+      card.querySelector('[data-name]').addEventListener('input', e => { pl.name = e.target.value; markDirty(); });
       card.querySelectorAll('[data-slide]').forEach(cb => cb.addEventListener('change', () => {
         const ids = state.slides.filter(sl => card.querySelector(`[data-slide="${CSS.escape(sl.id)}"]`)?.checked).map(sl => sl.id);
         pl.slide_ids = ids;
+        markDirty();
       }));
       container.appendChild(card);
     });
   }
   render();
-  document.getElementById('addPlaylist').addEventListener('click', () => { state.playlists.push({id: uid('playlist_'), name: 'Neue Playlist', slide_ids: []}); render(); });
+  document.getElementById('addPlaylist').addEventListener('click', () => { state.playlists.push({id: uid('playlist_'), name: 'Neue Playlist', slide_ids: []}); markDirty(); render(); });
   document.getElementById('savePlaylists').addEventListener('click', async () => {
     state.playlists.forEach(pl => { if (!pl.id) pl.id = slug(pl.name) || uid('playlist_'); });
-    try { await postJson('../api/playlists.php', {items: state.playlists}); toast('Playlists gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/playlists.php', {items: state.playlists}); clearDirty(); toast('Playlists gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
@@ -484,11 +505,11 @@ function initDisplays() {
             <label class="field">Token (optional)<input type="text" data-token value="${esc(d.token || '')}"></label>
           </div>
         </details>`;
-      card.querySelector('[data-del]').addEventListener('click', () => { state.displays = state.displays.filter(x => x !== d); render(); });
-      card.querySelector('[data-name]').addEventListener('input', e => { d.name = e.target.value; });
-      card.querySelector('[data-playlist]').addEventListener('change', e => { d.default_playlist_id = e.target.value; });
-      card.querySelector('[data-id]').addEventListener('input', e => { d.id = slug(e.target.value); render(); });
-      card.querySelector('[data-token]').addEventListener('input', e => { d.token = e.target.value; });
+      card.querySelector('[data-del]').addEventListener('click', () => { state.displays = state.displays.filter(x => x !== d); markDirty(); render(); });
+      card.querySelector('[data-name]').addEventListener('input', e => { d.name = e.target.value; markDirty(); });
+      card.querySelector('[data-playlist]').addEventListener('change', e => { d.default_playlist_id = e.target.value; markDirty(); });
+      card.querySelector('[data-id]').addEventListener('input', e => { d.id = slug(e.target.value); markDirty(); render(); });
+      card.querySelector('[data-token]').addEventListener('input', e => { d.token = e.target.value; markDirty(); });
       card.querySelector('[data-copy]').addEventListener('click', async () => {
         const ok = await copyText(url);
         if (ok) { toast('URL kopiert ✓'); return; }
@@ -504,6 +525,7 @@ function initDisplays() {
   document.getElementById('addDisplay').addEventListener('click', () => {
     const name = 'Display ' + (state.displays.length + 1);
     state.displays.push({id: slug(name) || uid('display_'), name, default_playlist_id: state.playlists[0]?.id || 'playlist_default', token: '', last_seen_at: null});
+    markDirty();
     render();
   });
   document.getElementById('saveDisplays').addEventListener('click', async () => {
@@ -513,7 +535,7 @@ function initDisplays() {
       if (ids.has(d.id)) { toast('Doppelte Display-ID: ' + d.id, 'err'); return; }
       ids.add(d.id);
     }
-    try { await postJson('../api/displays.php', {items: state.displays}); toast('Displays gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/displays.php', {items: state.displays}); clearDirty(); toast('Displays gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
@@ -545,17 +567,18 @@ function initSchedules() {
         </div>
         <div><div class="muted" style="margin-bottom:6px;">Aktive Tage:</div>
           <div class="day-picker">${DAYS.map(([k, l]) => `<span class="day-chip ${days.includes(k) ? 'on' : ''}" data-day="${k}">${l}</span>`).join('')}</div></div>`;
-      card.querySelector('[data-del]').addEventListener('click', () => { state.schedules = state.schedules.filter(x => x !== sc); render(); });
-      card.querySelector('[data-name]').addEventListener('input', e => sc.name = e.target.value);
-      card.querySelector('[data-display]').addEventListener('change', e => sc.display_id = e.target.value);
-      card.querySelector('[data-playlist]').addEventListener('change', e => sc.playlist_id = e.target.value);
-      card.querySelector('[data-from]').addEventListener('input', e => sc.from = e.target.value);
-      card.querySelector('[data-to]').addEventListener('input', e => sc.to = e.target.value);
+      card.querySelector('[data-del]').addEventListener('click', () => { state.schedules = state.schedules.filter(x => x !== sc); markDirty(); render(); });
+      card.querySelector('[data-name]').addEventListener('input', e => { sc.name = e.target.value; markDirty(); });
+      card.querySelector('[data-display]').addEventListener('change', e => { sc.display_id = e.target.value; markDirty(); });
+      card.querySelector('[data-playlist]').addEventListener('change', e => { sc.playlist_id = e.target.value; markDirty(); });
+      card.querySelector('[data-from]').addEventListener('input', e => { sc.from = e.target.value; markDirty(); });
+      card.querySelector('[data-to]').addEventListener('input', e => { sc.to = e.target.value; markDirty(); });
       card.querySelectorAll('[data-day]').forEach(chip => chip.addEventListener('click', () => {
         const k = chip.dataset.day;
         sc.days = sc.days || [];
         if (sc.days.includes(k)) sc.days = sc.days.filter(x => x !== k); else sc.days.push(k);
         chip.classList.toggle('on');
+        markDirty();
       }));
       container.appendChild(card);
     });
@@ -563,10 +586,11 @@ function initSchedules() {
   render();
   document.getElementById('addSchedule').addEventListener('click', () => {
     state.schedules.push({id: uid('schedule_'), name: 'Neuer Zeitplan', display_id: state.displays[0]?.id || 'default', playlist_id: state.playlists[0]?.id || 'playlist_default', from: '08:00', to: '17:00', days: ['mon', 'tue', 'wed', 'thu', 'fri']});
+    markDirty();
     render();
   });
   document.getElementById('saveSchedules').addEventListener('click', async () => {
-    try { await postJson('../api/schedules.php', {items: state.schedules}); toast('Zeitpläne gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/schedules.php', {items: state.schedules}); clearDirty(); toast('Zeitpläne gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
@@ -586,8 +610,9 @@ function initSettings() {
       weather: {enabled: form.weather_enabled.checked, location: form.weather_location.value.trim()},
       maintenance: {enabled: form.maintenance_enabled.checked, message: form.maintenance_message.value.trim()},
     };
-    try { await postJson('../api/settings.php', payload); toast('Einstellungen gespeichert ✓'); } catch (err) { toast(err.message, 'err'); }
+    try { await postJson('../api/settings.php', payload); clearDirty(); toast('Einstellungen gespeichert ✓'); } catch (err) { toast(err.message, 'err'); }
   });
+  form.addEventListener('input', markDirty);
 }
 
 /* ===================== EDITOR INIT ===================== */
@@ -619,10 +644,11 @@ function initEditor() {
       if (field === 'id') state.selectedSlideId = s.id;
       if (field === 'bg_color' || field === 'bg_image') renderCanvas();
       if (field === 'name') renderSlidesList();
+      markDirty();
     });
   });
 
-  document.getElementById('addSlide').addEventListener('click', () => { const s = newSlide(); state.slides.push(s); state.selectedSlideId = s.id; state.selectedBlockId = null; renderEditor(); });
+  document.getElementById('addSlide').addEventListener('click', () => { const s = newSlide(); state.slides.push(s); state.selectedSlideId = s.id; state.selectedBlockId = null; markDirty(); renderEditor(); });
 
   // Canvas Drag/Resize
   const canvas = document.getElementById('studioCanvas');
@@ -663,7 +689,7 @@ function initEditor() {
   const stop = () => {
     const wasInteracting = (state.drag && state.drag.moved) || state.resize;
     state.drag = null; state.resize = null; state.snap = {x: [], y: []};
-    if (wasInteracting) { renderCanvas(); renderBlockList(); }
+    if (wasInteracting) { markDirty(); renderCanvas(); renderBlockList(); }
     else { drawSnapGuides(canvas); }
   };
   canvas.addEventListener('pointerup', stop);
@@ -685,21 +711,21 @@ function initEditor() {
     const s = getSlide(); if (!s) return;
     s.blocks = (s.blocks || []).filter(b => b.id !== state.modalBlockId);
     state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null;
-    closeModal(); renderEditor();
+    markDirty(); closeModal(); renderEditor();
   });
   document.getElementById('blockModal').addEventListener('click', e => { if (e.target.id === 'blockModal') closeModal(); });
 
   // Tabelle
-  document.getElementById('tblAddRow').addEventListener('click', () => { const cols = state.tableDraft[0]?.length || 2; state.tableDraft.push(Array(cols).fill('')); renderTableGrid(); });
-  document.getElementById('tblAddCol').addEventListener('click', () => { state.tableDraft.forEach(r => r.push('')); renderTableGrid(); });
-  document.getElementById('tblDelRow').addEventListener('click', () => { if (state.tableDraft.length > 1) { state.tableDraft.pop(); renderTableGrid(); } });
-  document.getElementById('tblDelCol').addEventListener('click', () => { if ((state.tableDraft[0]?.length || 0) > 1) { state.tableDraft.forEach(r => r.pop()); renderTableGrid(); } });
+  document.getElementById('tblAddRow').addEventListener('click', () => { const cols = state.tableDraft[0]?.length || 2; state.tableDraft.push(Array(cols).fill('')); markDirty(); renderTableGrid(); });
+  document.getElementById('tblAddCol').addEventListener('click', () => { state.tableDraft.forEach(r => r.push('')); markDirty(); renderTableGrid(); });
+  document.getElementById('tblDelRow').addEventListener('click', () => { if (state.tableDraft.length > 1) { state.tableDraft.pop(); markDirty(); renderTableGrid(); } });
+  document.getElementById('tblDelCol').addEventListener('click', () => { if ((state.tableDraft[0]?.length || 0) > 1) { state.tableDraft.forEach(r => r.pop()); markDirty(); renderTableGrid(); } });
   document.getElementById('tblPaste').addEventListener('paste', e => {
     e.preventDefault();
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
     if (!text) return;
     const rows = text.replace(/\r/g, '').split('\n').filter(l => l.length).map(l => l.split('\t'));
-    if (rows.length) { state.tableDraft = rows; tableNorm(); renderTableGrid(); toast('Tabelle aus Zwischenablage übernommen ✓'); }
+    if (rows.length) { state.tableDraft = rows; tableNorm(); markDirty(); renderTableGrid(); toast('Tabelle aus Zwischenablage übernommen ✓'); }
     e.target.value = '';
   });
 
@@ -709,9 +735,13 @@ function initEditor() {
     const fd = new FormData(); fd.append('file', file);
     try {
       const res = await fetch('../api/upload.php', {method: 'POST', body: fd});
-      const data = await res.json();
-      if (!data.ok) throw new Error(data.error || 'Upload fehlgeschlagen.');
+      let data = null;
+      try { data = await res.json(); } catch (_) { /* keine JSON-Antwort (z. B. Proxy-413/PHP-Limit) */ }
+      if (!res.ok || !data || !data.ok) {
+        throw new Error((data && data.error) ? data.error : ('Upload fehlgeschlagen (HTTP ' + res.status + '). Datei evtl. zu gross.'));
+      }
       document.getElementById('mSrc').value = data.url;
+      markDirty();
       toast('Bild hochgeladen ✓');
     } catch (err) { toast(err.message, 'err'); }
     e.target.value = '';
@@ -735,16 +765,18 @@ function initEditor() {
       const s = getSlide(), b = getBlock();
       if (s && b) {
         const step = e.shiftKey ? 10 : 1;
-        if (e.key === 'ArrowLeft') b.x = clamp(b.x - step, 0, 1920 - b.w);
-        if (e.key === 'ArrowRight') b.x = clamp(b.x + step, 0, 1920 - b.w);
-        if (e.key === 'ArrowUp') b.y = clamp(b.y - step, 0, 1080 - b.h);
-        if (e.key === 'ArrowDown') b.y = clamp(b.y + step, 0, 1080 - b.h);
+        const w = Number(b.w || 0), h = Number(b.h || 0), bx = Number(b.x || 0), by = Number(b.y || 0);
+        if (e.key === 'ArrowLeft') b.x = clamp(bx - step, 0, 1920 - w);
+        if (e.key === 'ArrowRight') b.x = clamp(bx + step, 0, 1920 - w);
+        if (e.key === 'ArrowUp') b.y = clamp(by - step, 0, 1080 - h);
+        if (e.key === 'ArrowDown') b.y = clamp(by + step, 0, 1080 - h);
+        markDirty();
         renderCanvas();
       }
     }
     if (!typing && e.key === 'Delete' && state.selectedBlockId) {
       const s = getSlide();
-      if (s) { s.blocks = (s.blocks || []).filter(b => b.id !== state.selectedBlockId); state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; renderEditor(); }
+      if (s) { s.blocks = (s.blocks || []).filter(b => b.id !== state.selectedBlockId); state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; markDirty(); renderEditor(); }
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') { e.preventDefault(); saveSlides(); }
   });
@@ -756,7 +788,7 @@ async function saveSlides() {
     bg_color: s.bg_color || '#1a1a2e', bg_image: s.bg_image || '',
     blocks: Array.isArray(s.blocks) ? s.blocks : [],
   }));
-  try { await postJson('../api/slides.php', {items}); toast('Folien gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+  try { await postJson('../api/slides.php', {items}); clearDirty(); toast('Folien gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
 }
 
 async function openPreview() {

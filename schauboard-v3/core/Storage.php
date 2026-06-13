@@ -198,6 +198,14 @@ function schauboard_ensure_data_files(): void
             schauboard_write_json_file($path, $payload);
         }
     }
+
+    // Schutzregel fuer das data/-Verzeichnis mitschreiben (Apache), damit die
+    // JSON-Dateien + Backups nicht ueber /data/ oeffentlich abrufbar sind.
+    $dataDir = dirname(schauboard_json_path('settings'));
+    $htaccess = $dataDir . '/.htaccess';
+    if (is_dir($dataDir) && !is_file($htaccess)) {
+        @file_put_contents($htaccess, "Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");
+    }
 }
 
 function schauboard_find_by_id(array $items, string $id): ?array
@@ -224,4 +232,53 @@ function schauboard_revision(): string
     }
 
     return substr(md5(implode('-', $parts)), 0, 12);
+}
+
+/**
+ * Loest die aktuell aktive Playlist-ID fuer ein Display auf:
+ * Standard-Playlist des Displays, ggf. ueberschrieben durch ein aktives
+ * Zeitfenster. Behandelt Fenster ueber Mitternacht (from > to).
+ * Wird von display/index.php UND api/revision.php genutzt, damit der
+ * Live-Reload auch bei reinen Tageszeit-Wechseln (ohne Datei-Aenderung) greift.
+ */
+function schauboard_active_playlist_id(array $display, array $schedules, DateTime $now): string
+{
+    $playlistId = (string) ($display['default_playlist_id'] ?? 'playlist_default');
+    $displayId = (string) ($display['id'] ?? 'default');
+
+    $dayMap = ['Mon' => 'mon', 'Tue' => 'tue', 'Wed' => 'wed', 'Thu' => 'thu', 'Fri' => 'fri', 'Sat' => 'sat', 'Sun' => 'sun'];
+    $dayKey = $dayMap[$now->format('D')] ?? 'mon';
+    $t = $now->format('H:i');
+
+    foreach ($schedules as $candidate) {
+        if (($candidate['display_id'] ?? '') !== $displayId) {
+            continue;
+        }
+        $days = $candidate['days'] ?? [];
+        if ($days !== [] && !in_array($dayKey, $days, true)) {
+            continue;
+        }
+        $from = (string) ($candidate['from'] ?? '00:00');
+        $to = (string) ($candidate['to'] ?? '23:59');
+        // Normales Fenster: from<=to. Fenster ueber Mitternacht: from>to (z. B. 22:00-02:00).
+        $inWindow = ($from <= $to)
+            ? ($t >= $from && $t <= $to)
+            : ($t >= $from || $t <= $to);
+        if ($inWindow) {
+            $playlistId = (string) ($candidate['playlist_id'] ?? $playlistId);
+            break;
+        }
+    }
+
+    return $playlistId;
+}
+
+/**
+ * Display-spezifische Revision: Datei-Signatur + aktuell aufgeloeste Playlist.
+ * Aendert sich auch dann, wenn ein Zeitfenster die Playlist wechselt, ohne
+ * dass eine Datei veraendert wurde -> der 5s-Poll erkennt den Wechsel.
+ */
+function schauboard_display_revision(array $display, array $schedules, DateTime $now): string
+{
+    return schauboard_revision() . '-' . schauboard_active_playlist_id($display, $schedules, $now);
 }

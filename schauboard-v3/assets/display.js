@@ -110,11 +110,13 @@
     setInterval(beat, 60 * 1000);
   }
 
-  // Live-Reload: pollt die Versions-Signatur und laedt bei Aenderung neu.
+  // Live-Reload: pollt die display-spezifische Versions-Signatur und laedt bei
+  // Aenderung neu. Display-ID mitgeben, damit auch Zeitplan-Wechsel erkannt werden.
   if (!preview && cfg.revisionEndpoint) {
     var lastRev = cfg.revision || '';
+    var revUrl = cfg.revisionEndpoint + '?display=' + encodeURIComponent(cfg.displayId || 'default');
     setInterval(function () {
-      fetch(cfg.revisionEndpoint + '?_=' + Date.now(), {cache: 'no-store'})
+      fetch(revUrl + '&_=' + Date.now(), {cache: 'no-store'})
         .then(function (r) { return r.json(); })
         .then(function (data) {
           if (data && data.revision && lastRev && data.revision !== lastRev) {
@@ -125,4 +127,21 @@
         .catch(function () {});
     }, 5000);
   }
+
+  // Bei Aufloesungs-/Groessenwechsel (TV-Overscan, Drehung, Zoom) die Folien neu
+  // aufbauen, damit die Schrift-Skalierung zur neuen Buehnenbreite passt.
+  var resizeTimer = null;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () {
+      var sc = stageScale();
+      var visible = current;
+      stage.innerHTML = '';
+      layers = slides.map(buildSlide);
+      layers.forEach(function (layer) { stage.appendChild(layer); });
+      current = Math.min(visible, layers.length - 1);
+      if (layers[current]) layers[current].style.opacity = '1';
+      Blocks.applyLive(stage, {weatherEndpoint: cfg.weatherEndpoint});
+    }, 200);
+  });
 })();

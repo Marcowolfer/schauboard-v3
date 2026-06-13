@@ -22,6 +22,10 @@ if (!is_array($payload) || !isset($payload['items']) || !is_array($payload['item
     exit;
 }
 
-$items = array_map('schauboard_sanitize_display', $payload['items']);
-schauboard_write_dataset('displays', array_values($items));
+$items = array_values(array_map('schauboard_sanitize_display', $payload['items']));
+if (!schauboard_write_dataset('displays', $items)) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'Speichern fehlgeschlagen (Schreibfehler auf data/).']);
+    exit;
+}
 echo json_encode(['ok' => true, 'data' => $items]);
