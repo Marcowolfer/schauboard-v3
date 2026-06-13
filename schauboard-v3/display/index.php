@@ -119,7 +119,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:
   <div class="display-shell">
     <main id="sbStage"></main>
   </div>
-  <script>window.SCHAUBOARD_DISPLAY = <?= json_encode($displayConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;</script>
+  <script>window.SCHAUBOARD_DISPLAY = <?= json_encode($displayConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
   <script src="<?= htmlspecialchars($rootBase) ?>assets/blocks.js"></script>
   <script src="<?= htmlspecialchars($rootBase) ?>assets/display.js"></script>
 <?php endif; ?>

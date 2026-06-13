@@ -436,7 +436,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 
 <script src="../assets/blocks.js"></script>
 <script>
-const APP = <?= json_encode($jsState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+const APP = <?= json_encode($jsState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
 const SECTION = <?= json_encode($section) ?>;
 const ROOT = new URL('../', location.href).href;
 const WEATHER_ENDPOINT = '../api/weather.php';
