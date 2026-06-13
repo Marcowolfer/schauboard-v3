@@ -109,15 +109,43 @@ function renderBlockList() {
   const s = getSlide();
   list.innerHTML = '';
   if (!s || !s.blocks || !s.blocks.length) { list.innerHTML = '<div class="muted">Keine Blöcke</div>'; return; }
-  s.blocks.forEach(b => {
+  // Liste von oben (vorderste Ebene) nach unten (hinterste) anzeigen.
+  s.blocks.slice().reverse().forEach((b) => {
+    const idx = s.blocks.indexOf(b);
     const meta = B.TYPES[b.type] || B.TYPES.text;
-    const btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'block-pill' + (b.id === state.selectedBlockId ? ' active' : '');
-    btn.innerHTML = `<span><strong>${meta.icon} ${esc(meta.label)}</strong><small>${Math.round(b.w)}×${Math.round(b.h)}</small></span>`;
-    btn.addEventListener('click', () => { state.selectedBlockId = b.id; renderEditor(); });
-    list.appendChild(btn);
+    const row = document.createElement('div');
+    row.className = 'block-pill' + (b.id === state.selectedBlockId ? ' active' : '');
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'block-pill-info';
+    info.innerHTML = `<strong>${meta.icon} ${esc(meta.label)}</strong><small>${Math.round(b.w)}×${Math.round(b.h)}</small>`;
+    info.addEventListener('click', () => { state.selectedBlockId = b.id; updateSelection(); });
+    const ctrl = document.createElement('div');
+    ctrl.className = 'layer-ctrl';
+    const up = document.createElement('button');
+    up.type = 'button'; up.textContent = '▲'; up.title = 'Nach vorne'; up.disabled = idx === s.blocks.length - 1;
+    up.addEventListener('click', (e) => { e.stopPropagation(); moveBlock(b.id, 1); });
+    const down = document.createElement('button');
+    down.type = 'button'; down.textContent = '▼'; down.title = 'Nach hinten'; down.disabled = idx === 0;
+    down.addEventListener('click', (e) => { e.stopPropagation(); moveBlock(b.id, -1); });
+    ctrl.appendChild(up); ctrl.appendChild(down);
+    row.appendChild(info); row.appendChild(ctrl);
+    list.appendChild(row);
   });
+}
+
+function moveBlock(id, dir) {
+  const s = getSlide();
+  if (!s || !Array.isArray(s.blocks)) return;
+  const i = s.blocks.findIndex(b => b.id === id);
+  if (i < 0) return;
+  const j = i + dir;
+  if (j < 0 || j >= s.blocks.length) return;
+  const tmp = s.blocks[i];
+  s.blocks[i] = s.blocks[j];
+  s.blocks[j] = tmp;
+  state.selectedBlockId = id;
+  renderEditor();
 }
 
 function renderCanvas() {
@@ -129,55 +157,90 @@ function renderCanvas() {
 
   (s.blocks || []).forEach(block => {
     const node = B.render(block, 'editor');
-    if (block.id === state.selectedBlockId) node.classList.add('active');
-    node.addEventListener('pointerdown', (e) => {
-      if (e.button !== 0) return;
-      if (e.target.closest('.block-overlay-menu') || e.target.closest('.resize-handle')) return;
-      state.selectedBlockId = block.id;
-      const p = canvasPoint(canvas, e.clientX, e.clientY);
-      state.drag = {id: block.id, start: {x: e.clientX, y: e.clientY}, offset: {x: p.x - Number(block.x || 0), y: p.y - Number(block.y || 0)}, moved: false};
-      renderEditor();
-    });
-    node.addEventListener('dblclick', (e) => { e.preventDefault(); openModal(block.id); });
-
-    if (block.id === state.selectedBlockId) {
-      const menu = document.createElement('div');
-      menu.className = 'block-overlay-menu';
-      const mk = (txt, title, cls, fn) => {
-        const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = txt; b2.title = title; if (cls) b2.className = cls;
-        b2.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); fn(); });
-        b2.addEventListener('pointerdown', (ev) => ev.stopPropagation());
-        return b2;
-      };
-      menu.appendChild(mk('✎', 'Bearbeiten', '', () => openModal(block.id)));
-      menu.appendChild(mk('⧉', 'Duplizieren', '', () => {
-        const dup = JSON.parse(JSON.stringify(block));
-        dup.id = uid('block_');
-        dup.x = clamp(Number(block.x || 0) + 40, 0, 1900);
-        dup.y = clamp(Number(block.y || 0) + 40, 0, 1060);
-        s.blocks.push(dup); state.selectedBlockId = dup.id; renderEditor();
-      }));
-      menu.appendChild(mk('🗑', 'Löschen', 'danger', () => {
-        s.blocks = s.blocks.filter(x => x.id !== block.id);
-        state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; renderEditor();
-      }));
-      node.appendChild(menu);
-
-      const handle = document.createElement('span');
-      handle.className = 'resize-handle';
-      handle.addEventListener('pointerdown', (e) => {
-        e.preventDefault(); e.stopPropagation();
-        state.resize = {id: block.id, start: {x: e.clientX, y: e.clientY}, rect: {x: Number(block.x || 0), y: Number(block.y || 0), w: Number(block.w || 0), h: Number(block.h || 0)}};
-      });
-      node.appendChild(handle);
-    }
+    node.dataset.blockId = block.id;
+    attachBlockPointer(node, block);
+    if (block.id === state.selectedBlockId) decorateSelected(node, block);
     canvas.appendChild(node);
   });
 
+  drawSnapGuides(canvas);
+  B.applyLive(canvas, {weatherEndpoint: WEATHER_ENDPOINT});
+}
+
+// Pointer-/Doppelklick-Handler. Wichtig: beim Klick NICHT das ganze Canvas neu
+// aufbauen – sonst wird der angeklickte Block mitten in der Interaktion zerstoert
+// und Doppelklick/Buttons funktionieren nie.
+function attachBlockPointer(node, block) {
+  const canvas = document.getElementById('studioCanvas');
+  node.addEventListener('dblclick', (e) => { e.preventDefault(); openModal(block.id); });
+  node.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('.block-overlay-menu') || e.target.closest('.resize-handle')) return;
+    const wasSelected = state.selectedBlockId === block.id;
+    state.selectedBlockId = block.id;
+    if (!wasSelected) updateSelection();
+    const p = canvasPoint(canvas, e.clientX, e.clientY);
+    state.drag = {id: block.id, node, start: {x: e.clientX, y: e.clientY}, offset: {x: p.x - Number(block.x || 0), y: p.y - Number(block.y || 0)}, moved: false};
+  });
+}
+
+function decorateSelected(node, block) {
+  const s = getSlide();
+  if (!s) return;
+  node.classList.add('active');
+  const menu = document.createElement('div');
+  menu.className = 'block-overlay-menu';
+  const mk = (txt, title, cls, fn) => {
+    const b2 = document.createElement('button'); b2.type = 'button'; b2.textContent = txt; b2.title = title; if (cls) b2.className = cls;
+    b2.addEventListener('click', (ev) => { ev.stopPropagation(); ev.preventDefault(); fn(); });
+    b2.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+    return b2;
+  };
+  menu.appendChild(mk('✎', 'Bearbeiten', '', () => openModal(block.id)));
+  menu.appendChild(mk('⧉', 'Duplizieren', '', () => {
+    const dup = JSON.parse(JSON.stringify(block));
+    dup.id = uid('block_');
+    dup.x = clamp(Number(block.x || 0) + 40, 0, 1900);
+    dup.y = clamp(Number(block.y || 0) + 40, 0, 1060);
+    s.blocks.push(dup); state.selectedBlockId = dup.id; renderEditor();
+  }));
+  menu.appendChild(mk('🗑', 'Löschen', 'danger', () => {
+    s.blocks = s.blocks.filter(x => x.id !== block.id);
+    state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; renderEditor();
+  }));
+  node.appendChild(menu);
+
+  const handle = document.createElement('span');
+  handle.className = 'resize-handle';
+  handle.addEventListener('pointerdown', (e) => {
+    e.preventDefault(); e.stopPropagation();
+    state.resize = {id: block.id, node, start: {x: e.clientX, y: e.clientY}, rect: {x: Number(block.x || 0), y: Number(block.y || 0), w: Number(block.w || 0), h: Number(block.h || 0)}};
+  });
+  node.appendChild(handle);
+}
+
+// Selektion wechseln, OHNE die Block-Nodes neu zu bauen (haelt Doppelklick stabil).
+function updateSelection() {
+  const canvas = document.getElementById('studioCanvas');
+  const s = getSlide();
+  if (!s) return;
+  canvas.querySelectorAll('.sb-block').forEach(node => {
+    node.querySelector('.block-overlay-menu')?.remove();
+    node.querySelector('.resize-handle')?.remove();
+    node.classList.remove('active');
+    if (node.dataset.blockId === state.selectedBlockId) {
+      const blk = s.blocks.find(b => b.id === node.dataset.blockId);
+      if (blk) decorateSelected(node, blk);
+    }
+  });
+  renderBlockList();
+  renderSlideFields();
+}
+
+function drawSnapGuides(canvas) {
+  canvas.querySelectorAll('.snap-line').forEach(n => n.remove());
   state.snap.x.forEach(l => { const g = document.createElement('div'); g.className = 'snap-line v'; g.style.left = (l / 1920 * 100) + '%'; canvas.appendChild(g); });
   state.snap.y.forEach(l => { const g = document.createElement('div'); g.className = 'snap-line h'; g.style.top = (l / 1080 * 100) + '%'; canvas.appendChild(g); });
-
-  B.applyLive(canvas, {weatherEndpoint: WEATHER_ENDPOINT});
 }
 
 function renderSlideFields() {
@@ -543,7 +606,8 @@ function initEditor() {
       const dy = (e.clientY - state.resize.start.y) * (1080 / canvas.clientHeight);
       b.w = Math.round(clamp(state.resize.rect.w + dx, 40, 1920 - state.resize.rect.x));
       b.h = Math.round(clamp(state.resize.rect.h + dy, 40, 1080 - state.resize.rect.y));
-      renderCanvas(); renderBlockList();
+      const node = state.resize.node;
+      if (node) { node.style.width = (b.w / 1920 * 100) + '%'; node.style.height = (b.h / 1080 * 100) + '%'; }
       return;
     }
     if (!state.drag) return;
@@ -558,9 +622,18 @@ function initEditor() {
     b.x = Math.round(clamp(snapped.x, 0, 1920 - Number(b.w || 0)));
     b.y = Math.round(clamp(snapped.y, 0, 1080 - Number(b.h || 0)));
     state.snap = snapped.guides;
-    renderCanvas();
+    const node = state.drag.node;
+    if (node) { node.style.left = (b.x / 1920 * 100) + '%'; node.style.top = (b.y / 1080 * 100) + '%'; }
+    drawSnapGuides(canvas);
   });
-  const stop = () => { state.drag = null; state.resize = null; state.snap = {x: [], y: []}; renderCanvas(); };
+  // Nur nach echtem Ziehen/Resizen neu aufbauen. Ein reiner Klick laesst die
+  // Nodes stehen -> der folgende Doppelklick kommt zuverlaessig an.
+  const stop = () => {
+    const wasInteracting = (state.drag && state.drag.moved) || state.resize;
+    state.drag = null; state.resize = null; state.snap = {x: [], y: []};
+    if (wasInteracting) { renderCanvas(); renderBlockList(); }
+    else { drawSnapGuides(canvas); }
+  };
   canvas.addEventListener('pointerup', stop);
   canvas.addEventListener('pointerleave', () => { if (state.drag || state.resize) stop(); });
 

@@ -149,6 +149,12 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .slide-item-btn.active,.block-pill.active{border-color:rgba(95,140,255,.3);background:linear-gradient(135deg, rgba(95,140,255,.2), rgba(115,223,196,.08))}
 .slide-item-btn strong,.block-pill strong{display:block;font-size:13px}
 .slide-item-btn small,.block-pill small{display:block;color:var(--muted);margin-top:3px;font-size:11px}
+.block-pill{padding:0;overflow:hidden}
+.block-pill-info{flex:1;min-width:0;background:transparent;border:none;color:var(--text);text-align:left;cursor:pointer;padding:9px 11px}
+.layer-ctrl{display:flex;flex-direction:column;flex:0 0 auto;border-left:1px solid rgba(255,255,255,.08)}
+.layer-ctrl button{flex:1;min-height:0;width:28px;border:none;background:rgba(255,255,255,.04);color:var(--muted);cursor:pointer;font-size:9px;padding:2px 0}
+.layer-ctrl button:hover:not(:disabled){background:rgba(95,140,255,.22);color:#fff}
+.layer-ctrl button:disabled{opacity:.25;cursor:default}
 .editor-main{display:grid;grid-template-rows:auto minmax(0,1fr) auto;background:rgba(17,24,40,.42);min-height:0}
 .editor-toolbar{padding:7px 12px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;gap:8px;align-items:center;flex-wrap:wrap;background:rgba(19,26,43,.72)}
 .tool-palette{display:flex;gap:5px;flex-wrap:wrap}
