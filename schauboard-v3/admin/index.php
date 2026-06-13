@@ -105,7 +105,7 @@ button,input,select,textarea{font:inherit}
 .shell{max-width:1560px;height:100%;margin:0 auto;display:flex;flex-direction:column;border:1px solid var(--line);border-radius:16px;background:linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)),var(--panel);box-shadow:var(--shadow);overflow:hidden}
 header.appbar{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg, rgba(255,255,255,.03), transparent)}
 .brand{display:flex;align-items:center;gap:10px}
-.brand-logo{height:30px;width:auto;display:block}
+.brand-logo{height:30px;width:auto;display:block;background:#fff;border-radius:8px;padding:5px 10px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
 .brand .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(95,140,255,.16);border:1px solid rgba(95,140,255,.22);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#d8e5ff}
 .appbar .actions{display:flex;gap:8px;align-items:center}
 button.btn,.btn{min-height:38px;padding:9px 14px;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px;transition:transform .16s ease, box-shadow .16s ease, background .16s ease;background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.06)}
