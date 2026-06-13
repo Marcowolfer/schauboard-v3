@@ -132,6 +132,8 @@ button.btn:hover,.btn:hover{transform:translateY(-1px);background:rgba(255,255,2
 .spread{justify-content:space-between}
 label.field{display:grid;gap:7px;color:var(--muted);font-size:12px;font-weight:700}
 input,select,textarea{width:100%;min-height:38px;padding:9px 11px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.04);color:var(--text);outline:none}
+/* Dropdown-Eintraege im aufgeklappten Menue lesbar machen (sonst kontrastarm im Dark Mode) */
+select option{background:#0f1a2b;color:#f5f7fb}
 textarea{min-height:80px;resize:vertical}
 input:focus,select:focus,textarea:focus{border-color:rgba(95,140,255,.28);box-shadow:0 0 0 4px rgba(95,140,255,.12)}
 .checkbox{display:flex;align-items:center;gap:9px;color:var(--text);font-weight:600;font-size:13px}
