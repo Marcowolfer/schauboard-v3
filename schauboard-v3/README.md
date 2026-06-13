@@ -2,7 +2,7 @@
 
 Selbst gehostetes, kostenloses, dateibasiertes Digital-Signage-System (PHP 8.2+, keine Datenbank).
 
-> Stand: **v3.0.0-beta.1** – funktionsfähig und testbar. Noch Beta; v2 bleibt der produktive Live-Stand, bis v3 abgenommen ist.
+> Stand: **v3.0.0** – stabil/produktiv. Loest die v2-Linie als aktuelle Version ab.
 
 ## Schnellstart (lokal)
 
