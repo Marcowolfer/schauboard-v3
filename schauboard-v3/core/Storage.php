@@ -183,6 +183,23 @@ function schauboard_write_dataset(string $name, array $payload): bool
 
 function schauboard_ensure_data_files(): void
 {
+    $dataDir = dirname(schauboard_json_path('settings'));
+    $defaultsDir = $dataDir . '/defaults';
+
+    // 1) Beim ERSTEN Start die mitgelieferten Demo-/Default-Inhalte aus
+    //    data/defaults/ uebernehmen - aber NUR, wenn die Live-Datei fehlt.
+    //    Die Live-Dateien data/*.json liegen NICHT im Release-Paket; dadurch
+    //    ueberschreibt ein Update (Dateien drueberkopieren) NIE echte Daten.
+    if (is_dir($defaultsDir)) {
+        foreach ((glob($defaultsDir . '/*.json') ?: []) as $seed) {
+            $target = $dataDir . '/' . basename($seed);
+            if (!is_file($target)) {
+                @copy($seed, $target);
+            }
+        }
+    }
+
+    // 2) Fallback fuer Pflicht-Datensaetze, falls keine Seed-Datei vorhanden ist.
     $datasets = [
         'settings' => schauboard_settings_defaults(),
         'slides' => schauboard_slides_defaults(),
@@ -191,7 +208,6 @@ function schauboard_ensure_data_files(): void
         'schedules' => schauboard_schedules_defaults(),
         'rules' => schauboard_rules_defaults(),
     ];
-
     foreach ($datasets as $name => $payload) {
         $path = schauboard_json_path($name);
         if (!is_file($path)) {
@@ -199,9 +215,8 @@ function schauboard_ensure_data_files(): void
         }
     }
 
-    // Schutzregel fuer das data/-Verzeichnis mitschreiben (Apache), damit die
-    // JSON-Dateien + Backups nicht ueber /data/ oeffentlich abrufbar sind.
-    $dataDir = dirname(schauboard_json_path('settings'));
+    // 3) Schutzregel fuer das data/-Verzeichnis (Apache): JSON + Backups nicht
+    //    oeffentlich ueber /data/ abrufbar.
     $htaccess = $dataDir . '/.htaccess';
     if (is_dir($dataDir) && !is_file($htaccess)) {
         @file_put_contents($htaccess, "Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");

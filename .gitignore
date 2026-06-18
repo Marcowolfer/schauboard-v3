@@ -31,6 +31,10 @@ config.local.php
 **/data/last_update.txt
 **/data/heartbeats.json
 **/data/update_check.json
+# Live-Daten: werden beim ersten Start aus data/defaults/ erzeugt. Duerfen NICHT
+# ins Release-Paket, sonst ueberschreibt ein Update echte Folien/Einstellungen.
+# (data/defaults/*.json liegt eine Ebene tiefer und bleibt getrackt.)
+**/data/*.json
 **/data/*.bak.*
 **/data/*.tmp
 
