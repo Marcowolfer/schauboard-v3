@@ -30,6 +30,7 @@ config.local.php
 **/data/weather_*.json
 **/data/last_update.txt
 **/data/heartbeats.json
+**/data/update_check.json
 **/data/*.bak.*
 **/data/*.tmp
 
