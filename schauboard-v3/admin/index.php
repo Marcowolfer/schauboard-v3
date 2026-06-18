@@ -106,6 +106,16 @@ button,input,select,textarea{font:inherit}
 header.appbar{flex:0 0 auto;display:flex;justify-content:space-between;align-items:center;gap:16px;padding:8px 16px;border-bottom:1px solid var(--line);background:linear-gradient(180deg, rgba(255,255,255,.03), transparent)}
 .brand{display:flex;align-items:center;gap:10px}
 .brand-logo{height:30px;width:auto;display:block;background:#fff;border-radius:8px;padding:5px 10px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
+.update-banner{background:linear-gradient(90deg,rgba(95,140,255,.20),rgba(115,223,196,.14));border:1px solid rgba(95,140,255,.55);border-radius:14px;margin:0 0 14px;padding:11px 16px;box-shadow:0 8px 28px rgba(0,0,0,.28)}
+.update-banner .ub-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.update-banner .ub-icon{font-size:1.25rem;line-height:1}
+.update-banner .ub-text{flex:1 1 280px;font-weight:600;color:var(--text);line-height:1.35}
+.update-banner .ub-text small{display:block;font-weight:500;color:var(--muted);margin-top:2px}
+.update-banner .ub-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.update-banner .ub-howto{margin-top:11px;border-top:1px solid var(--line);padding-top:10px;color:var(--muted);font-size:.92rem}
+.update-banner .ub-howto ol{margin:0;padding-left:20px}
+.update-banner .ub-howto li{margin:4px 0}
+.update-banner .ub-howto code{background:rgba(255,255,255,.09);border-radius:5px;padding:1px 5px;font-family:Consolas,monospace}
 .brand .badge{display:inline-block;padding:2px 8px;border-radius:999px;background:rgba(95,140,255,.16);border:1px solid rgba(95,140,255,.22);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#d8e5ff}
 .appbar .actions{display:flex;gap:8px;align-items:center}
 button.btn,.btn{min-height:38px;padding:9px 14px;border:none;border-radius:12px;cursor:pointer;font-weight:700;font-size:13px;transition:transform .16s ease, box-shadow .16s ease, background .16s ease;background:rgba(255,255,255,.08);color:var(--text);border:1px solid rgba(255,255,255,.06)}
@@ -258,6 +268,24 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <form method="post" style="margin:0"><button type="submit" class="btn" name="logout" value="1">Abmelden</button></form>
     </div>
   </header>
+  <div id="updateBanner" class="update-banner" hidden>
+    <div class="ub-row">
+      <span class="ub-icon">⬆️</span>
+      <span class="ub-text"></span>
+      <span class="ub-actions">
+        <a class="btn small primary" id="ubDownload" target="_blank" rel="noreferrer">⬇ Herunterladen</a>
+        <button type="button" class="btn small" id="ubHowtoBtn">📋 Anleitung</button>
+        <button type="button" class="btn small" id="ubDismiss" title="Diese Version ausblenden">✕</button>
+      </span>
+    </div>
+    <div class="ub-howto" id="ubHowtoPanel" hidden>
+      <ol>
+        <li>ZIP herunterladen und entpacken.</li>
+        <li>Alle Dateien <strong>außer</strong> <code>data/</code>, <code>uploads/</code> und <code>config.local.php</code> in deinen Schauboard-Ordner kopieren und die vorhandenen überschreiben.</li>
+        <li>Seite neu laden – deine Folien, Einstellungen und Bilder bleiben erhalten.</li>
+      </ol>
+    </div>
+  </div>
   <div class="layout">
     <aside class="sidebar">
       <nav class="nav">
@@ -511,6 +539,39 @@ if (SECTION === 'playlists') initPlaylists();
 if (SECTION === 'displays') initDisplays();
 if (SECTION === 'schedules') initSchedules();
 if (SECTION === 'settings') initSettings();
+
+/* ===== Update-Hinweis (nur Info + gefuehrter Download, kein Auto-Ueberschreiben) ===== */
+(function initUpdateBanner() {
+  const banner = document.getElementById('updateBanner');
+  if (!banner) return;
+  const txt = banner.querySelector('.ub-text');
+  const dl = document.getElementById('ubDownload');
+  const howtoBtn = document.getElementById('ubHowtoBtn');
+  const howtoPanel = document.getElementById('ubHowtoPanel');
+  const dismiss = document.getElementById('ubDismiss');
+
+  howtoBtn.addEventListener('click', () => { howtoPanel.hidden = !howtoPanel.hidden; });
+
+  fetch('../api/update_check.php', {headers: {'Accept': 'application/json'}})
+    .then(r => r.json())
+    .then(info => {
+      if (!info || info.ok !== true || !info.update_available || !info.latest) return;
+      // Pro Version nur einmal nerven: weggeklickte Version merken.
+      let dismissed = '';
+      try { dismissed = localStorage.getItem('sb_update_dismissed') || ''; } catch (e) {}
+      if (dismissed === info.latest) return;
+      txt.innerHTML = 'Update verfügbar: <strong>Schauboard v' + esc(info.latest) + '</strong>'
+        + (info.notes ? ' – ' + esc(info.notes) : '')
+        + '<small>Deine Version: v' + esc(info.current) + (info.date ? ' · veröffentlicht ' + esc(info.date) : '') + '</small>';
+      if (info.url) { dl.href = info.url; } else { dl.style.display = 'none'; }
+      dismiss.addEventListener('click', () => {
+        banner.hidden = true;
+        try { localStorage.setItem('sb_update_dismissed', info.latest); } catch (e) {}
+      });
+      banner.hidden = false;
+    })
+    .catch(() => {});
+})();
 </script>
 </body>
 </html>
