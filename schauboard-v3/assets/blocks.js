@@ -143,6 +143,7 @@ window.SchauboardBlocks = (function () {
         var img = document.createElement('img');
         img.src = block.src;
         img.alt = '';
+        img.draggable = false; // sonst startet im Editor der native Bild-Drag und der Block laesst sich nicht verschieben
         img.style.objectFit = block.fit || 'cover';
         inner.appendChild(img);
       } else {
@@ -232,6 +233,7 @@ window.SchauboardBlocks = (function () {
       var img = document.createElement('img');
       img.src = qrSrc(block.data, size);
       img.alt = 'QR-Code';
+      img.draggable = false; // wie beim Bild-Block: nativen Drag verhindern, sonst klemmt das Verschieben
       // QR wird extern erzeugt (api.qrserver.com) -> im Offline-LAN sichtbarer Hinweis statt leerem Kasten.
       img.onerror = function () { inner.innerHTML = '<div class="sb-block-empty">QR-Code offline nicht verfügbar</div>'; };
       inner.appendChild(img);
