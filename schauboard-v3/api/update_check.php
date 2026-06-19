@@ -8,5 +8,6 @@ header('Content-Type: application/json; charset=UTF-8');
 
 $force = isset($_GET['force']) && $_GET['force'] === '1';
 $info = schauboard_check_update($force);
+$info['can_auto_update'] = schauboard_update_can_auto()['ok'];
 
 echo json_encode(['ok' => true] + $info);

@@ -273,7 +273,8 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <span class="ub-icon">⬆️</span>
       <span class="ub-text"></span>
       <span class="ub-actions">
-        <a class="btn small primary" id="ubDownload" target="_blank" rel="noreferrer">⬇ Herunterladen</a>
+        <button type="button" class="btn small primary" id="ubApply" hidden>⬆️ Jetzt aktualisieren</button>
+        <a class="btn small" id="ubDownload" target="_blank" rel="noreferrer" hidden>⬇ Herunterladen</a>
         <button type="button" class="btn small" id="ubHowtoBtn">📋 Anleitung</button>
         <button type="button" class="btn small" id="ubDismiss" title="Diese Version ausblenden">✕</button>
       </span>
@@ -540,17 +541,22 @@ if (SECTION === 'displays') initDisplays();
 if (SECTION === 'schedules') initSchedules();
 if (SECTION === 'settings') initSettings();
 
-/* ===== Update-Hinweis (nur Info + gefuehrter Download, kein Auto-Ueberschreiben) ===== */
+/* ===== Update-Hinweis: In-App-Update mit Fallback "gefuehrter Download" ===== */
 (function initUpdateBanner() {
   const banner = document.getElementById('updateBanner');
   if (!banner) return;
   const txt = banner.querySelector('.ub-text');
+  const apply = document.getElementById('ubApply');
   const dl = document.getElementById('ubDownload');
   const howtoBtn = document.getElementById('ubHowtoBtn');
   const howtoPanel = document.getElementById('ubHowtoPanel');
   const dismiss = document.getElementById('ubDismiss');
 
   howtoBtn.addEventListener('click', () => { howtoPanel.hidden = !howtoPanel.hidden; });
+
+  function showDownloadFallback(info) {
+    if (info.url) { dl.href = info.url; dl.hidden = false; }
+  }
 
   fetch('../api/update_check.php', {headers: {'Accept': 'application/json'}})
     .then(r => r.json())
@@ -560,14 +566,41 @@ if (SECTION === 'settings') initSettings();
       let dismissed = '';
       try { dismissed = localStorage.getItem('sb_update_dismissed') || ''; } catch (e) {}
       if (dismissed === info.latest) return;
+
       txt.innerHTML = 'Update verfügbar: <strong>Schauboard v' + esc(info.latest) + '</strong>'
         + (info.notes ? ' – ' + esc(info.notes) : '')
         + '<small>Deine Version: v' + esc(info.current) + (info.date ? ' · veröffentlicht ' + esc(info.date) : '') + '</small>';
-      if (info.url) { dl.href = info.url; } else { dl.style.display = 'none'; }
+
       dismiss.addEventListener('click', () => {
         banner.hidden = true;
         try { localStorage.setItem('sb_update_dismissed', info.latest); } catch (e) {}
       });
+
+      if (info.can_auto_update) {
+        apply.hidden = false;
+        apply.addEventListener('click', async () => {
+          if (!confirm('Jetzt auf Schauboard v' + info.latest + ' aktualisieren?\n\nDie Programmdateien werden ersetzt. Deine Folien, Einstellungen und Bilder bleiben erhalten.')) return;
+          apply.disabled = true; howtoBtn.disabled = true; dismiss.disabled = true;
+          const before = txt.innerHTML;
+          txt.innerHTML = '⏳ Update wird installiert … bitte dieses Fenster offen lassen.';
+          try {
+            const res = await fetch('../api/update_apply.php', {method: 'POST', headers: {'Accept': 'application/json'}});
+            const data = await res.json();
+            if (!data || !data.ok) throw new Error(data && data.error ? data.error : 'Update fehlgeschlagen.');
+            apply.hidden = true;
+            txt.innerHTML = '✓ Erfolgreich auf <strong>v' + esc(data.version) + '</strong> aktualisiert – Seite lädt neu …';
+            setTimeout(() => location.reload(), 1800);
+          } catch (e) {
+            txt.innerHTML = before;
+            apply.disabled = false; howtoBtn.disabled = false; dismiss.disabled = false;
+            toast(e.message, 'err');
+            showDownloadFallback(info); // manueller Weg als Rueckfall anbieten
+          }
+        });
+      } else {
+        showDownloadFallback(info);
+      }
+
       banner.hidden = false;
     })
     .catch(() => {});
