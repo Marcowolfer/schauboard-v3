@@ -1,14 +1,18 @@
 <?php
-// Wetter-Proxy: holt Daten von wttr.in, cached 10 Minuten.
+// Wetter-Proxy ueber Open-Meteo (kostenlos, kein API-Key, zuverlaessig).
+// Loest den Ort per Geocoding auf (Geo-Ergebnis lange gecacht) und holt das
+// aktuelle Wetter. Antwort 10 Min gecacht. Bei Ausfall wird ein alter Cache nur
+// bis zu einer Maximaldauer weitergegeben - danach lieber "offline" als ein
+// dauerhaft eingefrorener Falschwert.
 // Kein Login: das Display ruft diesen Endpunkt direkt auf.
 require_once dirname(__DIR__) . '/core/bootstrap.php';
 
 header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 
-$city = preg_replace('/[^a-zA-Z0-9\-_\+ äöüÄÖÜ,.]/u', '', (string) ($_GET['city'] ?? 'Zurich'));
-$city = trim($city);
-if ($city === '') {
+$cityRaw = preg_replace('/[^a-zA-Z0-9\-_\+ äöüÄÖÜéèàç\.,]/u', '', (string) ($_GET['city'] ?? 'Zurich'));
+$cityRaw = trim($cityRaw);
+if ($cityRaw === '') {
     echo json_encode(['error' => 'Kein Ort']);
     exit;
 }
@@ -17,54 +21,121 @@ $cacheDir = dirname(__DIR__) . '/data/cache';
 if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0775, true);
 }
-$cacheFile = $cacheDir . '/weather_' . md5($city) . '.json';
-$cacheTtl = 600;
+$cacheFile = $cacheDir . '/weather_' . md5($cityRaw) . '.json';
+$cacheTtl = 600;          // 10 Min frisch
+$staleMaxAge = 3 * 3600;  // alten Cache hoechstens 3h als Fallback ausgeben
 
+// 1) Frischer Cache -> direkt ausliefern.
 if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
     echo file_get_contents($cacheFile);
     exit;
 }
 
-$url = 'https://wttr.in/' . rawurlencode($city) . '?format=j1&lang=de';
-$ctx = stream_context_create(['http' => ['timeout' => 5, 'user_agent' => 'Schauboard/3.0']]);
-$raw = @file_get_contents($url, false, $ctx);
-
-if (!$raw) {
-    if (is_file($cacheFile)) {
-        echo file_get_contents($cacheFile);
-        exit;
+// Kleiner JSON-GET-Helfer (nur HTTP 200 zaehlt als Erfolg).
+$fetchJson = static function (string $url) {
+    $ctx = stream_context_create(['http' => [
+        'timeout' => 6,
+        'user_agent' => 'Schauboard/3 (+https://schauboard.ch)',
+        'header' => "Accept: application/json\r\n",
+        'ignore_errors' => true,
+    ]]);
+    $raw = @file_get_contents($url, false, $ctx);
+    if ($raw === false) {
+        return null;
     }
-    echo json_encode(['error' => 'Wetter nicht verfügbar']);
+    $status = 0;
+    foreach (($http_response_header ?? []) as $h) {
+        if (preg_match('#^HTTP/\S+\s+(\d+)#', $h, $m)) {
+            $status = (int) $m[1];
+        }
+    }
+    if ($status !== 0 && $status !== 200) {
+        return null;
+    }
+    $data = json_decode($raw, true);
+    return is_array($data) ? $data : null;
+};
+
+// Bei Fehler: alten Cache nur bis $staleMaxAge weitergeben, sonst "offline".
+$serveStaleOrError = static function () use ($cacheFile, $staleMaxAge) {
+    if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $staleMaxAge) {
+        echo file_get_contents($cacheFile);
+    } else {
+        echo json_encode(['error' => 'Wetter nicht verfügbar']);
+    }
     exit;
+};
+
+// 2) Ort aufloesen (Geocoding) - Ergebnis 30 Tage cachen (Koordinaten aendern sich nicht).
+$geoCache = $cacheDir . '/geo_' . md5($cityRaw) . '.json';
+$geo = null;
+if (is_file($geoCache) && (time() - filemtime($geoCache)) < 30 * 86400) {
+    $geo = json_decode((string) file_get_contents($geoCache), true);
+}
+if (!is_array($geo) || !isset($geo['lat'], $geo['lon'])) {
+    $parts = explode(',', $cityRaw, 2);
+    $name = trim($parts[0]);
+    $cc = isset($parts[1]) ? strtoupper(trim($parts[1])) : '';
+    $geoData = $fetchJson('https://geocoding-api.open-meteo.com/v1/search?count=5&language=de&format=json&name=' . rawurlencode($name));
+    $results = is_array($geoData) ? ($geoData['results'] ?? []) : [];
+    if (!$results) {
+        $serveStaleOrError();
+    }
+    // Falls Land angegeben (z. B. "Zurich,CH"), passenden Treffer bevorzugen.
+    $pick = $results[0];
+    if ($cc !== '') {
+        foreach ($results as $r) {
+            if (strtoupper((string) ($r['country_code'] ?? '')) === $cc) { $pick = $r; break; }
+        }
+    }
+    $geo = [
+        'lat' => $pick['latitude'] ?? null,
+        'lon' => $pick['longitude'] ?? null,
+        'name' => $pick['name'] ?? $name,
+    ];
+    if ($geo['lat'] === null || $geo['lon'] === null) {
+        $serveStaleOrError();
+    }
+    @file_put_contents($geoCache, json_encode($geo));
 }
 
-$data = json_decode($raw, true);
-if (!is_array($data)) {
-    echo json_encode(['error' => 'Parse-Fehler']);
-    exit;
+// 3) Aktuelles Wetter holen.
+$wx = $fetchJson('https://api.open-meteo.com/v1/forecast?latitude=' . rawurlencode((string) $geo['lat'])
+    . '&longitude=' . rawurlencode((string) $geo['lon'])
+    . '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto');
+$cur = is_array($wx) ? ($wx['current'] ?? null) : null;
+if (!is_array($cur) || !isset($cur['temperature_2m'])) {
+    $serveStaleOrError();
 }
 
-$cur = $data['current_condition'][0] ?? [];
-$area = $data['nearest_area'][0] ?? [];
-$code = (int) ($cur['weatherCode'] ?? 113);
-$emoji = match (true) {
-    $code === 113 => '☀️',
-    $code === 116 => '⛅',
-    in_array($code, [119, 122], true) => '☁️',
-    in_array($code, [143, 248, 260], true) => '🌫️',
-    in_array($code, [176, 263, 266, 293, 296, 299, 302, 305, 308, 353, 356, 359], true) => '🌧️',
-    in_array($code, [179, 182, 185, 281, 284, 311, 314, 317, 320, 323, 326, 329, 332, 335, 338, 350, 368, 371, 374, 377], true) => '🌨️',
-    in_array($code, [200, 386, 389, 392, 395], true) => '⛈️',
-    default => '🌡️',
+// WMO-Wettercode -> Emoji + deutscher Text.
+$code = (int) ($cur['weather_code'] ?? 0);
+[$emoji, $desc] = match (true) {
+    $code === 0 => ['☀️', 'Klar'],
+    $code === 1 => ['🌤️', 'Überwiegend klar'],
+    $code === 2 => ['⛅', 'Teils bewölkt'],
+    $code === 3 => ['☁️', 'Bewölkt'],
+    in_array($code, [45, 48], true) => ['🌫️', 'Nebel'],
+    in_array($code, [51, 53, 55], true) => ['🌦️', 'Niesel'],
+    in_array($code, [56, 57], true) => ['🌧️', 'Gefrierender Niesel'],
+    in_array($code, [61, 63, 65], true) => ['🌧️', 'Regen'],
+    in_array($code, [66, 67], true) => ['🌧️', 'Gefrierender Regen'],
+    in_array($code, [71, 73, 75], true) => ['🌨️', 'Schnee'],
+    $code === 77 => ['🌨️', 'Schneegriesel'],
+    in_array($code, [80, 81, 82], true) => ['🌧️', 'Regenschauer'],
+    in_array($code, [85, 86], true) => ['🌨️', 'Schneeschauer'],
+    $code === 95 => ['⛈️', 'Gewitter'],
+    in_array($code, [96, 99], true) => ['⛈️', 'Gewitter mit Hagel'],
+    default => ['🌡️', ''],
 };
 
 $result = [
-    'city' => $area['areaName'][0]['value'] ?? $city,
-    'temp_c' => $cur['temp_C'] ?? '--',
-    'feels_like' => $cur['FeelsLikeC'] ?? '--',
-    'desc' => $cur['lang_de'][0]['value'] ?? $cur['weatherDesc'][0]['value'] ?? '',
-    'humidity' => $cur['humidity'] ?? '--',
-    'wind_kmph' => $cur['windspeedKmph'] ?? '--',
+    'city' => $geo['name'] ?? $cityRaw,
+    'temp_c' => (string) round((float) $cur['temperature_2m']),
+    'feels_like' => isset($cur['apparent_temperature']) ? (string) round((float) $cur['apparent_temperature']) : '--',
+    'desc' => $desc,
+    'humidity' => (string) ($cur['relative_humidity_2m'] ?? '--'),
+    'wind_kmph' => isset($cur['wind_speed_10m']) ? (string) round((float) $cur['wind_speed_10m']) : '--',
     'emoji' => $emoji,
     'updated' => date('H:i'),
 ];

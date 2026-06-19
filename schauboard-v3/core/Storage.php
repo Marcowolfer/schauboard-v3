@@ -84,7 +84,7 @@ function schauboard_settings_defaults(): array
         'weather' => [
             'enabled' => true,
             'location' => 'Zurich,CH',
-            'provider' => 'wttr.in',
+            'provider' => 'open-meteo',
         ],
         'maintenance' => [
             'enabled' => false,

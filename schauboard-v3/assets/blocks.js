@@ -287,6 +287,8 @@ window.SchauboardBlocks = (function () {
   var weatherPending = new Set(); // staedte mit laufendem Fetch (verhindert Mehrfach-Requests beim Editor-Drag)
   var WEATHER_TTL = 9 * 60 * 1000;
   var globalLiveStarted = false;
+  var weatherEndpointSaved = null;   // fuer den periodischen Refresh gemerkt
+  var weatherRefreshStarted = false; // genau ein Intervall, kein Stacking
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -406,11 +408,25 @@ window.SchauboardBlocks = (function () {
     });
   }
 
+  // Wetter periodisch aktualisieren (alle 15 Min), damit ein statisches 24/7-
+  // Display nicht auf dem Wert vom Seitenaufruf festhaengt. Genau ein Intervall.
+  function startWeatherRefresh() {
+    if (weatherRefreshStarted || !weatherEndpointSaved) return;
+    weatherRefreshStarted = true;
+    setInterval(function () {
+      if (weatherEndpointSaved) loadWeather(document, weatherEndpointSaved);
+    }, 15 * 60 * 1000);
+  }
+
   // Startet/aktualisiert alle Live-Elemente unter root.
   function applyLive(root, opts) {
     opts = opts || {};
     startGlobalLive();
-    if (opts.weatherEndpoint) loadWeather(root, opts.weatherEndpoint);
+    if (opts.weatherEndpoint) {
+      weatherEndpointSaved = opts.weatherEndpoint;
+      loadWeather(root, opts.weatherEndpoint);
+      startWeatherRefresh();
+    }
     setupWebpageRefresh(root);
     setupTickers(root);
   }
