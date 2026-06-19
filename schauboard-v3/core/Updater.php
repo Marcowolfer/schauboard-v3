@@ -35,8 +35,17 @@ function schauboard_update_enabled(): bool
     return !empty($cfg['update_check_enabled']) && schauboard_update_manifest_url() !== '';
 }
 
-// Nur https-URLs mit Host durchlassen (kein javascript:, kein http:) – die URL
-// landet ungefiltert als Link-Ziel im Admin.
+// Host, von dem ausschliesslich geladen werden darf = Host des Manifests
+// (z. B. schauboard.ch). So kann ein manipuliertes Manifest den Download nicht
+// auf eine fremde Domain umbiegen (Host-Pinning).
+function schauboard_update_allowed_host(): string
+{
+    $p = parse_url(schauboard_update_manifest_url());
+    return strtolower((string) ($p['host'] ?? ''));
+}
+
+// Nur https-URLs auf dem erlaubten Host durchlassen (kein javascript:, kein
+// http:, keine fremde Domain). Die URL landet als Link-Ziel/Download-Quelle.
 function schauboard_update_safe_url($url): string
 {
     $url = trim((string) $url);
@@ -46,6 +55,10 @@ function schauboard_update_safe_url($url): string
     $p = parse_url($url);
     if (!$p || ($p['scheme'] ?? '') !== 'https' || empty($p['host'])) {
         return '';
+    }
+    $allowed = schauboard_update_allowed_host();
+    if ($allowed !== '' && strtolower($p['host']) !== $allowed) {
+        return ''; // Host-Pinning: nur der Manifest-Host ist erlaubt
     }
     return $url;
 }
@@ -276,12 +289,11 @@ function schauboard_apply_update(): array
     }
     $current = (string) (schauboard_version()['current'] ?? '0.0.0');
 
+    // Nur die direkte, auf den Manifest-Host gepinnte zip-URL verwenden
+    // (kein Redirect auf fremde Domains -> echtes Host-Pinning).
     $zipUrl = schauboard_update_safe_url($info['zip'] ?? '');
     if ($zipUrl === '') {
-        $zipUrl = schauboard_update_safe_url($info['url'] ?? '');
-    }
-    if ($zipUrl === '') {
-        return ['ok' => false, 'error' => 'Keine gültige Download-URL im Manifest.'];
+        return ['ok' => false, 'error' => 'Kein direkter Download (zip) auf ' . schauboard_update_allowed_host() . ' im Manifest – bitte manuell aktualisieren.'];
     }
     $expectSha = strtolower((string) ($info['sha256'] ?? ''));
 
@@ -292,11 +304,11 @@ function schauboard_apply_update(): array
         return ['ok' => false, 'error' => 'Arbeitsordner nicht anlegbar (ist data/ beschreibbar?).'];
     }
 
-    // 1) Herunterladen
+    // 1) Herunterladen – bewusst OHNE Redirects, damit der Download den
+    //    gepinnten Host nicht verlassen kann.
     $ctx = stream_context_create(['http' => [
         'timeout' => 45,
-        'follow_location' => 1,
-        'max_redirects' => 5,
+        'follow_location' => 0,
         'user_agent' => 'Schauboard/' . $current . ' (auto-update)',
     ]]);
     $bytes = @file_get_contents($zipUrl, false, $ctx);
