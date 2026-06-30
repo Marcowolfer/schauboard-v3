@@ -1,7 +1,7 @@
 <?php
 
 return [
-    'current' => '3.4.1',
+    'current' => '3.4.2',
     'name' => 'Schauboard',
     'channel' => 'stable',
 ];

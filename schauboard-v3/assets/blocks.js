@@ -267,8 +267,7 @@ window.SchauboardBlocks = (function () {
           var yf = document.createElement('iframe');
           yf.src = 'https://www.youtube.com/embed/' + ytid +
             '?autoplay=1&mute=1&loop=1&playlist=' + ytid + '&controls=0&rel=0&playsinline=1&modestbranding=1';
-          yf.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
-          yf.setAttribute('referrerpolicy', 'no-referrer');
+          yf.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture; fullscreen');
           yf.setAttribute('frameborder', '0');
           inner.appendChild(yf);
         } else {
