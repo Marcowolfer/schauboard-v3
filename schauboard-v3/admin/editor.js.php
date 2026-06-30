@@ -770,6 +770,10 @@ function initSettings() {
   });
   form.addEventListener('input', markDirty);
 
+  // Speichern-Knopf oben in der Kopfzeile (wie in den anderen Bereichen) -> kein Scrollen noetig.
+  const topSave = document.getElementById('saveSettingsTop');
+  if (topSave) topSave.addEventListener('click', () => form.requestSubmit());
+
   // Sichern & Umzug (Komplett-Backup)
   document.getElementById('exportBackupBtn').addEventListener('click', exportBackup);
   const importBackupInput = document.getElementById('importBackupInput');

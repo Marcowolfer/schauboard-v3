@@ -317,6 +317,8 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
           <?php elseif ($section === 'schedules'): ?>
             <button type="button" class="btn" id="addSchedule">+ Zeitplan</button>
             <button type="button" class="btn primary" id="saveSchedules">💾 Speichern</button>
+          <?php elseif ($section === 'settings'): ?>
+            <button type="button" class="btn primary" id="saveSettingsTop">💾 Speichern</button>
           <?php endif; ?>
         </div>
       </div>
