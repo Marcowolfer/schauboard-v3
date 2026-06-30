@@ -26,7 +26,8 @@ window.SchauboardBlocks = (function () {
     webpage:   {label: 'Webseite', icon: '🌐', w: 900, h: 600},
     qrcode:    {label: 'QR-Code',  icon: '🔳', w: 320, h: 380},
     countdown: {label: 'Countdown', icon: '⏳', w: 560, h: 240},
-    animation: {label: 'Animation', icon: '✨', w: 900, h: 600}
+    animation: {label: 'Animation', icon: '✨', w: 900, h: 600},
+    video:     {label: 'Video',     icon: '🎬', w: 960, h: 540}
   };
 
   function escapeHtml(value) {
@@ -72,6 +73,7 @@ window.SchauboardBlocks = (function () {
     if (type === 'qrcode') { base.data = 'https://schauboard.ch'; base.label = ''; base.font_size = 30; }
     if (type === 'countdown') { base.target = ''; base.label = 'Countdown'; }
     if (type === 'animation') { base.html = ''; }
+    if (type === 'video') { base.src = ''; base.fit = 'cover'; }
     return base;
   }
 
@@ -244,6 +246,23 @@ window.SchauboardBlocks = (function () {
       } else {
         inner.innerHTML = '<div class="sb-anim-ph">✨ Animation' +
           '<span>' + (block.html ? 'Live-Vorschau auf dem Display / per „Vorschau“' : 'HTML/CSS im Editor einfügen') + '</span></div>';
+      }
+      return inner;
+    }
+
+    if (type === 'video') {
+      inner.style.padding = '0';
+      // Live nur im Display/Vorschau; im Editor Platzhalter (Block bleibt verschiebbar).
+      if (block.src && mode === 'display') {
+        var vid = document.createElement('video');
+        vid.src = block.src;
+        vid.autoplay = true; vid.loop = true; vid.muted = true; vid.defaultMuted = true;
+        vid.setAttribute('muted', ''); vid.setAttribute('autoplay', ''); vid.setAttribute('loop', ''); vid.setAttribute('playsinline', '');
+        vid.style.objectFit = block.fit || 'cover';
+        inner.appendChild(vid);
+      } else {
+        inner.innerHTML = '<div class="sb-anim-ph">🎬 Video' +
+          '<span>' + (block.src ? 'Live-Vorschau auf dem Display / per „Vorschau“' : 'Datei hochladen oder URL setzen') + '</span></div>';
       }
       return inner;
     }

@@ -12,6 +12,7 @@ const TYPE_FIELDS = {
   qrcode:    ['type','data','qlabel','font_size','color','advanced'],
   countdown: ['type','target','clabel','font_size','color','advanced'],
   animation: ['type','html','advanced'],
+  video:     ['type','src','upload','fit','advanced'],
 };
 
 /* Schutz vor Datenverlust: ungespeicherte Aenderungen markieren und beim
@@ -370,6 +371,7 @@ function applyModal() {
   if (t === 'text' || t === 'heading') { b.text = document.getElementById('mText').value; b.bold = document.getElementById('mBold').checked; }
   if (t === 'ticker') { b.text = document.getElementById('mText').value; b.speed = Number(document.getElementById('mSpeed').value || 60); b.bg = document.getElementById('mBg').value.trim() || '#313244'; }
   if (t === 'image') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
+  if (t === 'video') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
   if (t === 'clock') { b.clock_format = document.getElementById('mClockFormat').value; b.show_date = document.getElementById('mShowDate').checked; }
   if (t === 'weather') { b.city = document.getElementById('mCity').value.trim(); } // leer = globalen Standardort nutzen
   if (t === 'webpage') { b.url = document.getElementById('mUrl').value.trim(); b.refresh_minutes = Number(document.getElementById('mRefresh').value || 0); b.zoom = Number(document.getElementById('mZoom').value || 100); }

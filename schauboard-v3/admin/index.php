@@ -428,11 +428,11 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
         <select id="mType"></select>
       </label>
       <label class="field full" data-f="text">Inhalt<textarea id="mText"></textarea></label>
-      <label class="field" data-f="src">Bild-URL / Pfad
+      <label class="field" data-f="src">Bild-/Video-URL / Pfad
         <input type="text" id="mSrc">
       </label>
-      <label class="field" data-f="upload">Bild hochladen
-        <input type="file" id="mUpload" accept="image/*">
+      <label class="field" data-f="upload">Bild/Video hochladen
+        <input type="file" id="mUpload" accept="image/*,video/*">
       </label>
       <label class="field" data-f="fit">Darstellung
         <select id="mFit"><option value="cover">Füllen (cover)</option><option value="contain">Einpassen (contain)</option><option value="fill">Strecken</option></select>

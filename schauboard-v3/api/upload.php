@@ -18,25 +18,31 @@ if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
     exit;
 }
 
-$maxBytes = 25 * 1024 * 1024;
-if (($file['size'] ?? 0) > $maxBytes) {
-    http_response_code(413);
-    echo json_encode(['ok' => false, 'error' => 'Datei zu gross (max. 25 MB).']);
-    exit;
-}
-
-$allowed = [
+$images = [
     'image/jpeg' => 'jpg',
     'image/png' => 'png',
     'image/gif' => 'gif',
     'image/webp' => 'webp',
 ];
+$videos = [
+    'video/mp4' => 'mp4',
+    'video/webm' => 'webm',
+];
+$allowed = $images + $videos;
 
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime = $finfo->file($file['tmp_name']);
 if (!isset($allowed[$mime])) {
     http_response_code(415);
-    echo json_encode(['ok' => false, 'error' => 'Nur Bilder (JPG, PNG, GIF, WebP) erlaubt.']);
+    echo json_encode(['ok' => false, 'error' => 'Nur Bilder (JPG, PNG, GIF, WebP) oder Videos (MP4, WebM) erlaubt.']);
+    exit;
+}
+
+$isVideo = isset($videos[$mime]);
+$maxBytes = $isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
+if (($file['size'] ?? 0) > $maxBytes) {
+    http_response_code(413);
+    echo json_encode(['ok' => false, 'error' => 'Datei zu gross (max. ' . ($isVideo ? '100 MB' : '25 MB') . '). Sehr grosse Videos brauchen evtl. hoehere upload_max_filesize/post_max_size in der php.ini.']);
     exit;
 }
 

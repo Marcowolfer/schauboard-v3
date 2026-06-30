@@ -121,7 +121,7 @@ function schauboard_sanitize_table($value): array
 
 function schauboard_block_types(): array
 {
-    return ['text', 'heading', 'clock', 'image', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation'];
+    return ['text', 'heading', 'clock', 'image', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
 }
 
 function schauboard_sanitize_block(array $block): array
@@ -196,6 +196,10 @@ function schauboard_sanitize_block(array $block): array
             // versehentlich riesiger Inhalt das slides.json nicht sprengt.
             $html = is_string($block['html'] ?? null) ? $block['html'] : '';
             $clean['html'] = function_exists('mb_substr') ? mb_substr($html, 0, 1500000) : substr($html, 0, 1500000);
+            break;
+        case 'video':
+            $clean['src'] = schauboard_sanitize_urlish($block['src'] ?? '');
+            $clean['fit'] = in_array(($block['fit'] ?? 'cover'), ['cover', 'contain', 'fill'], true) ? $block['fit'] : 'cover';
             break;
     }
 
