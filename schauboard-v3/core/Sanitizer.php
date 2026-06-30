@@ -121,7 +121,7 @@ function schauboard_sanitize_table($value): array
 
 function schauboard_block_types(): array
 {
-    return ['text', 'heading', 'clock', 'image', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown'];
+    return ['text', 'heading', 'clock', 'image', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation'];
 }
 
 function schauboard_sanitize_block(array $block): array
@@ -189,6 +189,13 @@ function schauboard_sanitize_block(array $block): array
             $target = schauboard_sanitize_text($block['target'] ?? '');
             $clean['target'] = preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $target) ? $target : '';
             $clean['label'] = schauboard_sanitize_text($block['label'] ?? '');
+            break;
+        case 'animation':
+            // Eigenes HTML/CSS. Bewusst NICHT gestrippt (wird in einer Sandbox ohne
+            // same-origin gerendert -> isoliert). Nur Groesse begrenzen, damit ein
+            // versehentlich riesiger Inhalt das slides.json nicht sprengt.
+            $html = is_string($block['html'] ?? null) ? $block['html'] : '';
+            $clean['html'] = function_exists('mb_substr') ? mb_substr($html, 0, 1500000) : substr($html, 0, 1500000);
             break;
     }
 

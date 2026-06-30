@@ -25,7 +25,8 @@ window.SchauboardBlocks = (function () {
     table:     {label: 'Tabelle',  icon: '▦',  w: 760, h: 420},
     webpage:   {label: 'Webseite', icon: '🌐', w: 900, h: 600},
     qrcode:    {label: 'QR-Code',  icon: '🔳', w: 320, h: 380},
-    countdown: {label: 'Countdown', icon: '⏳', w: 560, h: 240}
+    countdown: {label: 'Countdown', icon: '⏳', w: 560, h: 240},
+    animation: {label: 'Animation', icon: '✨', w: 900, h: 600}
   };
 
   function escapeHtml(value) {
@@ -70,6 +71,7 @@ window.SchauboardBlocks = (function () {
     if (type === 'webpage') { base.url = ''; base.refresh_minutes = 0; base.zoom = 100; }
     if (type === 'qrcode') { base.data = 'https://schauboard.ch'; base.label = ''; base.font_size = 30; }
     if (type === 'countdown') { base.target = ''; base.label = 'Countdown'; }
+    if (type === 'animation') { base.html = ''; }
     return base;
   }
 
@@ -224,6 +226,24 @@ window.SchauboardBlocks = (function () {
         inner.innerHTML = '<div class="sb-webpage-fallback">🌐 <strong>Webseite</strong>' +
           '<span class="sb-wp-url">' + escapeHtml(block.url || 'Noch keine URL gesetzt') + '</span>' +
           '<span style="font-size:.72em;opacity:.7">' + (mode === 'editor' ? 'Live-Vorschau erst auf dem Display' : 'Diese Seite erlaubt keine Einbettung') + '</span></div>';
+      }
+      return inner;
+    }
+
+    if (type === 'animation') {
+      inner.style.padding = '0';
+      // Eigene HTML/CSS-Animation in einer SANDBOX (kein same-origin -> isoliert).
+      // Live nur im Display/Vorschau; im Editor ein Platzhalter, damit der Block
+      // verschiebbar bleibt (ein aktives iframe wuerde die Maus schlucken).
+      if (block.html && mode === 'display') {
+        var aframe = document.createElement('iframe');
+        aframe.setAttribute('sandbox', 'allow-scripts');
+        aframe.setAttribute('scrolling', 'no');
+        aframe.srcdoc = String(block.html);
+        inner.appendChild(aframe);
+      } else {
+        inner.innerHTML = '<div class="sb-anim-ph">✨ Animation' +
+          '<span>' + (block.html ? 'Live-Vorschau auf dem Display / per „Vorschau“' : 'HTML/CSS im Editor einfügen') + '</span></div>';
       }
       return inner;
     }

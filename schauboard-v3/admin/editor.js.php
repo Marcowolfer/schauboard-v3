@@ -11,6 +11,7 @@ const TYPE_FIELDS = {
   webpage:   ['type','url','refresh_minutes','zoom','advanced'],
   qrcode:    ['type','data','qlabel','font_size','color','advanced'],
   countdown: ['type','target','clabel','font_size','color','advanced'],
+  animation: ['type','html','advanced'],
 };
 
 /* Schutz vor Datenverlust: ungespeicherte Aenderungen markieren und beim
@@ -339,6 +340,7 @@ function openModal(blockId) {
   document.getElementById('mQLabel').value = b.label || '';
   document.getElementById('mTarget').value = b.target || '';
   document.getElementById('mCLabel').value = b.label || '';
+  document.getElementById('mHtml').value = b.html || '';
   document.getElementById('mFont').value = Number(b.font_size || 42);
   document.getElementById('mColor').value = b.color || '#ffffff';
   document.getElementById('mAlign').value = b.align || 'left';
@@ -373,6 +375,7 @@ function applyModal() {
   if (t === 'webpage') { b.url = document.getElementById('mUrl').value.trim(); b.refresh_minutes = Number(document.getElementById('mRefresh').value || 0); b.zoom = Number(document.getElementById('mZoom').value || 100); }
   if (t === 'qrcode') { b.data = document.getElementById('mData').value.trim(); b.label = document.getElementById('mQLabel').value.trim(); }
   if (t === 'countdown') { b.target = document.getElementById('mTarget').value; b.label = document.getElementById('mCLabel').value.trim(); }
+  if (t === 'animation') { b.html = document.getElementById('mHtml').value; }
   if (t === 'table') {
     b.table_data = state.tableDraft;
     b.header_bg = document.getElementById('mHeaderBg').value.trim() || '#313244';

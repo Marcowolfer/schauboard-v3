@@ -61,6 +61,9 @@
     if (next === current || !layers[next]) return;
     var outEl = layers[current];
     var inEl = layers[next];
+    // Animationen der einblendenden Folie neu starten (srcdoc neu setzen = reload),
+    // damit der Effekt bei jedem Folienwechsel wieder von vorne laeuft.
+    inEl.querySelectorAll('.sb-block.animation iframe').forEach(function (f) { f.srcdoc = f.srcdoc; });
     if (transition === 'none') {
       outEl.style.opacity = '0';
       inEl.style.opacity = '1';

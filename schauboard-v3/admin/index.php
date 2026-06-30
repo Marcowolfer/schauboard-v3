@@ -480,6 +480,10 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
         </div>
       </div>
 
+      <label class="field full" data-f="html">Animation – eigenes HTML/CSS (läuft isoliert in einer Sandbox)
+        <textarea id="mHtml" class="paste-zone" style="min-height:170px;font-family:Consolas,monospace;font-size:12px;" placeholder="HTML/CSS einfügen – Tipp: mit @keyframes animieren. Live-Vorschau über den „Vorschau“-Knopf bzw. auf dem Display."></textarea>
+      </label>
+
       <details class="full" data-f="advanced">
         <summary class="muted" style="cursor:pointer;">Position & Grösse</summary>
         <div class="form-grid" style="margin-top:12px;">
