@@ -85,13 +85,16 @@ $displayConfig = [
 ];
 
 $pageTitle = $maintenance ? 'Wartung' : ($display['name'] ?? 'Schauboard Display');
+// Cache-Busting: Asset-URLs bekommen die App-Version angehaengt, damit Browser/TVs
+// nach einem Update sofort den neuen Code laden (statt veraltetem blocks.js aus dem Cache).
+$assetVer = rawurlencode((string) (schauboard_version()['current'] ?? '0'));
 ?><!DOCTYPE html>
 <html lang="de">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars($pageTitle) ?></title>
-<link rel="stylesheet" href="<?= htmlspecialchars($rootBase) ?>assets/blocks.css">
+<link rel="stylesheet" href="<?= htmlspecialchars($rootBase) ?>assets/blocks.css?v=<?= $assetVer ?>">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:"Segoe UI",Arial,sans-serif}
@@ -116,8 +119,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:
     <main id="sbStage"></main>
   </div>
   <script>window.SCHAUBOARD_DISPLAY = <?= json_encode($displayConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
-  <script src="<?= htmlspecialchars($rootBase) ?>assets/blocks.js"></script>
-  <script src="<?= htmlspecialchars($rootBase) ?>assets/display.js"></script>
+  <script src="<?= htmlspecialchars($rootBase) ?>assets/blocks.js?v=<?= $assetVer ?>"></script>
+  <script src="<?= htmlspecialchars($rootBase) ?>assets/display.js?v=<?= $assetVer ?>"></script>
 <?php endif; ?>
 </body>
 </html>

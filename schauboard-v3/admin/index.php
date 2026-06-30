@@ -95,7 +95,7 @@ $jsState = [
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title><?= htmlspecialchars(($version['name'] ?? 'Schauboard') . ' Admin') ?></title>
-<link rel="stylesheet" href="../assets/blocks.css">
+<link rel="stylesheet" href="../assets/blocks.css?v=<?= htmlspecialchars($version['current'] ?? '0') ?>">
 <style>
 :root{--bg:#06111c;--bg2:#0b1524;--panel:#0f1a2b;--line:rgba(255,255,255,.08);--text:#f5f7fb;--muted:#93a8c2;--accent:#5f8cff;--accent2:#73dfc4;--danger:#ff8ea1;--ok:#73dfc4;--shadow:0 32px 90px rgba(0,0,0,.35)}
 *{box-sizing:border-box;margin:0;padding:0}
@@ -512,7 +512,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="../assets/blocks.js"></script>
+<script src="../assets/blocks.js?v=<?= htmlspecialchars($version['current'] ?? '0') ?>"></script>
 <script>
 const APP = <?= json_encode($jsState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
 const SECTION = <?= json_encode($section) ?>;
