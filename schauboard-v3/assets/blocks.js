@@ -109,6 +109,13 @@ window.SchauboardBlocks = (function () {
       '&margin=8&data=' + encodeURIComponent(data || ' ');
   }
 
+  // Extrahiert die YouTube-Video-ID aus diversen Link-Formen (watch, youtu.be, embed, shorts).
+  function youtubeId(url) {
+    if (!url) return '';
+    var m = String(url).match(/(?:youtube\.com\/(?:watch\?(?:.*&)?v=|embed\/|shorts\/|v\/)|youtu\.be\/)([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : '';
+  }
+
   // Baut den Innen-Inhalt eines Blocks (ohne Positionierung). mode: 'display' | 'editor'.
   // opts.scale: Buehnen-Skalierung (z. B. Editor-Canvas 836px / 1920 = 0.435).
   // Positionen sind in % -> brauchen das nicht; Schriftgroessen sind in px aus
@@ -252,17 +259,29 @@ window.SchauboardBlocks = (function () {
 
     if (type === 'video') {
       inner.style.padding = '0';
+      var ytid = youtubeId(block.src);
       // Live nur im Display/Vorschau; im Editor Platzhalter (Block bleibt verschiebbar).
       if (block.src && mode === 'display') {
-        var vid = document.createElement('video');
-        vid.src = block.src;
-        vid.autoplay = true; vid.loop = true; vid.muted = true; vid.defaultMuted = true;
-        vid.setAttribute('muted', ''); vid.setAttribute('autoplay', ''); vid.setAttribute('loop', ''); vid.setAttribute('playsinline', '');
-        vid.style.objectFit = block.fit || 'cover';
-        inner.appendChild(vid);
+        if (ytid) {
+          // YouTube: offizielles Embed mit Autoplay (nur stumm moeglich) + Endlosschleife.
+          var yf = document.createElement('iframe');
+          yf.src = 'https://www.youtube.com/embed/' + ytid +
+            '?autoplay=1&mute=1&loop=1&playlist=' + ytid + '&controls=0&rel=0&playsinline=1&modestbranding=1';
+          yf.setAttribute('allow', 'autoplay; encrypted-media; picture-in-picture');
+          yf.setAttribute('referrerpolicy', 'no-referrer');
+          yf.setAttribute('frameborder', '0');
+          inner.appendChild(yf);
+        } else {
+          var vid = document.createElement('video');
+          vid.src = block.src;
+          vid.autoplay = true; vid.loop = true; vid.muted = true; vid.defaultMuted = true;
+          vid.setAttribute('muted', ''); vid.setAttribute('autoplay', ''); vid.setAttribute('loop', ''); vid.setAttribute('playsinline', '');
+          vid.style.objectFit = block.fit || 'cover';
+          inner.appendChild(vid);
+        }
       } else {
         inner.innerHTML = '<div class="sb-anim-ph">🎬 Video' +
-          '<span>' + (block.src ? 'Live-Vorschau auf dem Display / per „Vorschau“' : 'Datei hochladen oder URL setzen') + '</span></div>';
+          '<span>' + (block.src ? (ytid ? 'YouTube – Live-Vorschau auf dem Display / per „Vorschau“' : 'Live-Vorschau auf dem Display / per „Vorschau“') : 'Datei, URL oder YouTube-Link setzen') + '</span></div>';
       }
       return inner;
     }
