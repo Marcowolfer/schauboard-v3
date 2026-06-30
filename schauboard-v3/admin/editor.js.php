@@ -300,6 +300,7 @@ function renderEditor() {
   ensureEditorSelection();
   renderSlidesList();
   renderBlockList();
+  renderTemplatesList();
   renderCanvas();
   renderSlideFields();
 }
@@ -425,6 +426,159 @@ function renderTableGrid() {
 function tableNorm() {
   const cols = state.tableDraft.reduce((m, r) => Math.max(m, r.length), 1);
   state.tableDraft = state.tableDraft.map(r => { const c = r.slice(); while (c.length < cols) c.push(''); return c; });
+}
+
+/* ===================== VORLAGEN + EXPORT/IMPORT ===================== */
+// Gemeinsames Datei-Format: ein Envelope mit Marker, damit Import gezielt pruefen kann.
+function sbEnvelope(kind, data) {
+  return {schauboard: true, kind: kind, format: 1, exported_at: new Date().toISOString(), data: data};
+}
+function sbSafeName(s) {
+  return (String(s || 'export').toLowerCase().replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '')) || 'export';
+}
+function sbDownload(filename, obj) {
+  const blob = new Blob([JSON.stringify(obj, null, 2)], {type: 'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+function sbReadJsonFile(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => { try { resolve(JSON.parse(r.result)); } catch (e) { reject(new Error('Keine gültige JSON-Datei.')); } };
+    r.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
+    r.readAsText(file);
+  });
+}
+// Folie mit frischen IDs (Folie + alle Bloecke) -> kollidiert beim Import/Duplizieren nicht.
+function freshSlide(slideLike) {
+  const c = JSON.parse(JSON.stringify(slideLike || {}));
+  c.id = uid('slide_');
+  c.blocks = (c.blocks || []).map(b => { const nb = JSON.parse(JSON.stringify(b)); nb.id = uid('block_'); return nb; });
+  return c;
+}
+function slideForTemplate(s) { const c = JSON.parse(JSON.stringify(s)); delete c.id; return c; }
+
+/* ----- Vorlagen-Bibliothek ----- */
+function renderTemplatesList() {
+  const list = document.getElementById('templateList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!state.templates.length) { list.innerHTML = '<div class="muted">Keine Vorlagen</div>'; return; }
+  state.templates.forEach(t => {
+    const blocks = (t.slide && t.slide.blocks) ? t.slide.blocks.length : 0;
+    const row = document.createElement('div');
+    row.className = 'block-pill';
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.className = 'block-pill-info';
+    info.title = 'Neue Folie aus dieser Vorlage';
+    info.innerHTML = `<strong>📄 ${esc(t.name || 'Vorlage')}</strong><small>${blocks} Blöcke</small>`;
+    info.addEventListener('click', () => createSlideFromTemplate(t.id));
+    const ctrl = document.createElement('div');
+    ctrl.className = 'layer-ctrl';
+    const ex = document.createElement('button');
+    ex.type = 'button'; ex.textContent = '⬇'; ex.title = 'Vorlage exportieren';
+    ex.addEventListener('click', (e) => { e.stopPropagation(); sbDownload('schauboard-vorlage-' + sbSafeName(t.name) + '.json', sbEnvelope('template', t)); });
+    const del = document.createElement('button');
+    del.type = 'button'; del.textContent = '🗑'; del.title = 'Vorlage löschen';
+    del.addEventListener('click', (e) => { e.stopPropagation(); deleteTemplate(t.id); });
+    ctrl.appendChild(ex); ctrl.appendChild(del);
+    row.appendChild(info); row.appendChild(ctrl);
+    list.appendChild(row);
+  });
+}
+async function saveTemplates() {
+  await postJson('../api/templates.php', {items: state.templates});
+}
+async function addTemplateFromCurrentSlide() {
+  const s = getSlide();
+  if (!s) { toast('Keine Folie ausgewählt.', 'err'); return; }
+  const name = prompt('Name der Vorlage:', s.name || 'Vorlage');
+  if (name === null) return;
+  const t = {id: uid('tpl_'), name: (name.trim() || 'Vorlage'), slide: slideForTemplate(s)};
+  state.templates.push(t);
+  try { await saveTemplates(); renderTemplatesList(); toast('Als Vorlage gespeichert ✓'); }
+  catch (e) { state.templates = state.templates.filter(x => x !== t); toast(e.message, 'err'); }
+}
+function createSlideFromTemplate(id) {
+  const t = state.templates.find(x => x.id === id);
+  if (!t || !t.slide) return;
+  const ns = freshSlide(t.slide);
+  ns.name = t.name || ns.name || 'Neue Folie';
+  state.slides.push(ns);
+  state.selectedSlideId = ns.id;
+  markDirty();
+  renderEditor();
+  toast('Folie aus Vorlage erstellt ✓');
+}
+async function deleteTemplate(id) {
+  const t = state.templates.find(x => x.id === id);
+  if (!t) return;
+  if (!confirm('Vorlage „' + (t.name || '') + '" löschen?')) return;
+  const before = state.templates.slice();
+  state.templates = state.templates.filter(x => x.id !== id);
+  try { await saveTemplates(); renderTemplatesList(); toast('Vorlage gelöscht'); }
+  catch (e) { state.templates = before; renderTemplatesList(); toast(e.message, 'err'); }
+}
+
+/* ----- Einzel-Folie Export/Import ----- */
+function exportCurrentSlide() {
+  const s = getSlide();
+  if (!s) { toast('Keine Folie ausgewählt.', 'err'); return; }
+  sbDownload('schauboard-folie-' + sbSafeName(s.name) + '.json', sbEnvelope('slide', slideForTemplate(s)));
+}
+async function importSlideOrTemplateFile(file) {
+  let env;
+  try { env = await sbReadJsonFile(file); } catch (e) { toast(e.message, 'err'); return; }
+  if (!env || env.schauboard !== true || !env.data) { toast('Keine Schauboard-Datei.', 'err'); return; }
+  if (env.kind === 'slide') {
+    const ns = freshSlide(env.data);
+    if (!ns.name) ns.name = 'Importierte Folie';
+    state.slides.push(ns);
+    state.selectedSlideId = ns.id;
+    markDirty();
+    renderEditor();
+    toast('Folie importiert ✓ – zum Sichern „Speichern" klicken.');
+  } else if (env.kind === 'template') {
+    const t = env.data;
+    t.id = uid('tpl_');
+    if (!t.name) t.name = 'Importierte Vorlage';
+    if (!t.slide && t.blocks) t.slide = t; // Toleranz fuer aeltere/abweichende Formate
+    state.templates.push(t);
+    try { await saveTemplates(); renderTemplatesList(); toast('Vorlage importiert ✓'); }
+    catch (e) { state.templates = state.templates.filter(x => x !== t); toast(e.message, 'err'); }
+  } else if (env.kind === 'backup') {
+    toast('Das ist ein Komplett-Backup – bitte unter „Einstellungen" importieren.', 'err');
+  } else {
+    toast('Unbekannter Dateityp.', 'err');
+  }
+}
+
+/* ----- Komplett-Backup (Sichern & Umzug) ----- */
+async function exportBackup() {
+  try {
+    const res = await fetch('../api/backup.php', {headers: {'Accept': 'application/json'}});
+    const env = await res.json();
+    if (!env || env.schauboard !== true) throw new Error('Export fehlgeschlagen.');
+    const stamp = (env.exported_at || new Date().toISOString()).slice(0, 10);
+    sbDownload('schauboard-backup-' + stamp + '.json', env);
+    toast('Backup exportiert ✓');
+  } catch (e) { toast(e.message, 'err'); }
+}
+async function importBackupFile(file) {
+  let env;
+  try { env = await sbReadJsonFile(file); } catch (e) { toast(e.message, 'err'); return; }
+  if (!env || env.schauboard !== true || env.kind !== 'backup' || !env.data) { toast('Kein Schauboard-Backup.', 'err'); return; }
+  if (!confirm('ACHTUNG: Das Backup ERSETZT alle aktuellen Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen).\n\nFortfahren?')) return;
+  try {
+    await postJson('../api/backup.php', {data: env.data});
+    toast('Backup eingespielt ✓ – Seite lädt neu …');
+    setTimeout(() => location.reload(), 1500);
+  } catch (e) { toast(e.message, 'err'); }
 }
 
 /* ===================== PLAYLISTS ===================== */
@@ -615,6 +769,16 @@ function initSettings() {
     try { await postJson('../api/settings.php', payload); clearDirty(); toast('Einstellungen gespeichert ✓'); } catch (err) { toast(err.message, 'err'); }
   });
   form.addEventListener('input', markDirty);
+
+  // Sichern & Umzug (Komplett-Backup)
+  document.getElementById('exportBackupBtn').addEventListener('click', exportBackup);
+  const importBackupInput = document.getElementById('importBackupInput');
+  document.getElementById('importBackupBtn').addEventListener('click', () => importBackupInput.click());
+  importBackupInput.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) importBackupFile(f);
+    e.target.value = '';
+  });
 }
 
 /* ===================== EDITOR INIT ===================== */
@@ -651,6 +815,17 @@ function initEditor() {
   });
 
   document.getElementById('addSlide').addEventListener('click', () => { const s = newSlide(); state.slides.push(s); state.selectedSlideId = s.id; state.selectedBlockId = null; markDirty(); renderEditor(); });
+
+  // Vorlagen + Einzel-Export/-Import
+  document.getElementById('saveAsTemplate').addEventListener('click', addTemplateFromCurrentSlide);
+  document.getElementById('exportSlideBtn').addEventListener('click', exportCurrentSlide);
+  const importSlideInput = document.getElementById('importSlideInput');
+  document.getElementById('importSlideBtn').addEventListener('click', () => importSlideInput.click());
+  importSlideInput.addEventListener('change', (e) => {
+    const f = e.target.files[0];
+    if (f) importSlideOrTemplateFile(f);
+    e.target.value = '';
+  });
 
   // Canvas Drag/Resize
   const canvas = document.getElementById('studioCanvas');

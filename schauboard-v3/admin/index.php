@@ -87,6 +87,7 @@ $jsState = [
     'schedules' => $schedules,
     'heartbeats' => (object) $heartbeats,
     'offlineTimeoutMin' => (int) ($settings['system']['offline_timeout_minutes'] ?? 5),
+    'templates' => schauboard_read_dataset('templates'),
 ];
 ?><!DOCTYPE html>
 <html lang="de">
@@ -333,6 +334,16 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
                 <h4>Ebenen</h4>
                 <div id="blockList" class="editor-side-list"></div>
               </section>
+              <section class="editor-side-section">
+                <h4>Vorlagen</h4>
+                <div id="templateList" class="editor-side-list"></div>
+                <button type="button" class="btn small" id="saveAsTemplate" style="width:100%;margin-top:10px;">★ Folie als Vorlage</button>
+                <div class="row" style="margin-top:8px;gap:6px;">
+                  <button type="button" class="btn small" id="exportSlideBtn" style="flex:1;">📤 Export</button>
+                  <button type="button" class="btn small" id="importSlideBtn" style="flex:1;">📥 Import</button>
+                </div>
+                <input type="file" id="importSlideInput" accept="application/json,.json" hidden>
+              </section>
             </aside>
             <section class="editor-main">
               <div class="editor-toolbar">
@@ -383,6 +394,15 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
               <button type="submit" class="btn primary">💾 Einstellungen speichern</button>
             </div>
           </form>
+        </section>
+        <section class="card" style="margin-top:18px;">
+          <h3 style="margin:0 0 6px;">Sichern &amp; Umzug</h3>
+          <p class="muted" style="margin:0 0 14px;">Alle Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen) in eine Datei sichern – ideal als Backup oder für den Umzug auf eine neue Installation.</p>
+          <div class="row">
+            <button type="button" class="btn" id="exportBackupBtn">⬇ Komplett-Backup exportieren</button>
+            <button type="button" class="btn danger" id="importBackupBtn">⬆ Backup importieren …</button>
+            <input type="file" id="importBackupInput" accept="application/json,.json" hidden>
+          </div>
         </section>
       <?php else: ?>
         <section class="card">
@@ -522,6 +542,7 @@ const state = {
   playlists: JSON.parse(JSON.stringify(APP.playlists || [])),
   displays: JSON.parse(JSON.stringify(APP.displays || [])),
   schedules: JSON.parse(JSON.stringify(APP.schedules || [])),
+  templates: JSON.parse(JSON.stringify(APP.templates || [])),
   heartbeats: APP.heartbeats || {},
   selectedSlideId: null,
   selectedBlockId: null,

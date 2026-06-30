@@ -1,1 +1,19 @@
-[]
+[
+  {
+    "id": "tpl_infotafel",
+    "name": "Infotafel",
+    "slide": {
+      "name": "Infotafel",
+      "bg_color": "#0f1a2b",
+      "bg_image": "",
+      "duration": 12,
+      "blocks": [
+        {"id": "b1", "type": "heading", "x": 120, "y": 110, "w": 1200, "h": 180, "base_w": 1200, "base_h": 180, "color": "#ffffff", "align": "left", "font_size": 110, "text": "Willkommen", "bold": true},
+        {"id": "b2", "type": "text", "x": 120, "y": 320, "w": 1200, "h": 120, "base_w": 1200, "base_h": 120, "color": "#9fb0c9", "align": "left", "font_size": 48, "text": "Schön, dass Sie da sind.", "bold": false},
+        {"id": "b3", "type": "clock", "x": 1430, "y": 90, "w": 380, "h": 170, "base_w": 380, "base_h": 170, "color": "#73dfc4", "align": "center", "font_size": 96, "clock_format": "HH:MM", "show_date": true},
+        {"id": "b4", "type": "weather", "x": 1430, "y": 300, "w": 380, "h": 320, "base_w": 380, "base_h": 320, "color": "#ffffff", "align": "center", "font_size": 40, "city": ""},
+        {"id": "b5", "type": "ticker", "x": 0, "y": 985, "w": 1920, "h": 95, "base_w": 1920, "base_h": 95, "color": "#ffffff", "align": "left", "font_size": 46, "text": "Aktuelle Infos hier eintragen …", "speed": 55, "bg": "#5f8cff"}
+      ]
+    }
+  }
+]
