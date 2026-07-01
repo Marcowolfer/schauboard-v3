@@ -156,8 +156,8 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 
 /* ===== Editor ===== */
 .editor-card{display:flex}
-.editor-workspace{flex:1;min-height:0;display:grid;grid-template-columns:180px minmax(0,1fr);gap:0;border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.02)}
-.editor-sidebar{border-right:1px solid rgba(255,255,255,.06);background:rgba(12,18,32,.7);display:grid;grid-template-rows:1fr auto auto;min-height:0}
+.editor-workspace{flex:1;min-height:0;display:grid;grid-template-columns:340px minmax(0,1fr);gap:0;border:1px solid rgba(255,255,255,.06);border-radius:14px;overflow:hidden;background:rgba(255,255,255,.02)}
+.editor-sidebar{border-right:1px solid rgba(255,255,255,.06);background:rgba(12,18,32,.7);display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0}
 .editor-side-section{padding:12px;border-bottom:1px solid rgba(255,255,255,.06);overflow:auto}
 .editor-side-section h4{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7f8ead;margin-bottom:10px}
 .editor-side-list{display:grid;gap:7px}
@@ -165,15 +165,31 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .slide-item-btn.active,.block-pill.active{border-color:rgba(95,140,255,.3);background:linear-gradient(135deg, rgba(95,140,255,.2), rgba(115,223,196,.08))}
 .slide-item-btn strong,.block-pill strong{display:block;font-size:13px}
 .slide-item-btn small,.block-pill small{display:block;color:var(--muted);margin-top:3px;font-size:11px}
-/* Folienliste: scrollbar bei vielen Folien + Drag&Drop-Sortierung */
-#slidesList{max-height:40vh;overflow-y:auto;padding-right:2px}
-.slide-item-btn{cursor:grab}
+/* Folien + Ebenen NEBENEINANDER: zwei gleich hohe Spalten statt gestapelt */
+.editor-side-cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);min-height:0;border-bottom:1px solid rgba(255,255,255,.08)}
+.editor-side-cols .editor-side-section{min-height:0;overflow:auto;border-bottom:none;padding-top:0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+.editor-side-cols .es-slides{border-right:1px solid rgba(255,255,255,.06)}
+/* Ueberschriften bleiben beim Scrollen als Trenner oben stehen */
+.editor-side-cols .editor-side-section h4{position:sticky;top:0;z-index:1;margin:0 0 10px;padding:12px 0 8px;background:rgba(12,18,32,.94);backdrop-filter:blur(2px)}
+#blockList{overflow-y:auto}
+/* Vorlagen: einklappbare Fussleiste ueber die volle Sidebar-Breite */
+.editor-side-templates{background:rgba(255,255,255,.015)}
+.editor-side-templates>summary{list-style:none;cursor:pointer;user-select:none;display:flex;align-items:center;gap:8px;padding:11px 12px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7f8ead}
+.editor-side-templates>summary::-webkit-details-marker{display:none}
+.editor-side-templates>summary::before{content:"\25B8";font-size:9px;color:#5f6f8c;transition:transform .16s ease}
+.editor-side-templates[open]>summary::before{transform:rotate(90deg)}
+.editor-side-templates>summary:hover{color:#c8d3ea}
+.editor-side-templates .es-tpl-body{padding:0 12px 12px;max-height:26vh;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+/* Folienliste fuellt jetzt ihre Spalte (kein fixer 40vh-Deckel mehr); Drag&Drop bleibt vertikal */
+#slidesList{max-height:none;overflow-y:auto;padding-right:2px}
+.slide-item-btn{cursor:grab;position:relative}
 .slide-item-btn.dragging{opacity:.4}
 .slide-item-btn.drop-before{box-shadow:inset 0 3px 0 0 var(--accent2)}
 .slide-item-btn.drop-after{box-shadow:inset 0 -3px 0 0 var(--accent2)}
 .slide-item-btn .si-grip{flex:0 0 auto;opacity:.35;font-size:15px;line-height:1;letter-spacing:-2px}
-.slide-item-btn .si-info{flex:1 1 auto;min-width:0}
-.slide-item-btn .si-del{flex:0 0 auto;cursor:pointer;opacity:.55;padding:0 2px}
+.slide-item-btn .si-info{flex:1 1 auto;min-width:0;padding-right:15px}
+/* Loeschen-X absolut oben rechts -> konkurriert nie um die (schmale) Spaltenbreite */
+.slide-item-btn .si-del{position:absolute;top:0;right:0;cursor:pointer;opacity:.5;padding:7px 8px;line-height:1}
 .slide-item-btn .si-del:hover{opacity:1}
 .block-pill{padding:0;overflow:hidden}
 .block-pill-info{flex:1;min-width:0;background:transparent;border:none;color:var(--text);text-align:left;cursor:pointer;padding:9px 11px}
@@ -206,7 +222,6 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .snap-line.v{top:0;bottom:0;width:1px}.snap-line.h{left:0;right:0;height:1px}
 .canvas-empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(255,255,255,.5);font-size:15px;text-align:center;padding:30px}
 .editor-bottombar{padding:7px 12px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;background:rgba(19,26,43,.72)}
-.editor-sidebar{grid-template-rows:minmax(0,1.4fr) minmax(0,1fr)!important}
 
 /* ===== Cards/lists for playlists/displays/schedules ===== */
 .item-grid{display:grid;gap:12px}
@@ -264,6 +279,12 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
   .editor-workspace{grid-template-columns:1fr;display:block}
   .editor-stage-wrap{min-height:56vh}
   .form-grid{grid-template-columns:1fr}
+  /* Auf schmalen Fenstern die zwei Spalten wieder untereinander stapeln */
+  .editor-side-cols{grid-template-columns:1fr}
+  .editor-side-cols .es-slides{border-right:none;border-bottom:1px solid rgba(255,255,255,.06)}
+  .editor-side-cols .editor-side-section h4{position:static;backdrop-filter:none}
+  #slidesList{max-height:34vh}
+  .editor-side-templates .es-tpl-body{max-height:none}
 }
 </style>
 </head>
@@ -337,25 +358,29 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
         <section class="card editor-card">
           <div class="editor-workspace">
             <aside class="editor-sidebar">
-              <section class="editor-side-section">
-                <h4>Folien</h4>
-                <div id="slidesList" class="editor-side-list"></div>
-                <button type="button" class="btn small" id="addSlide" style="width:100%;margin-top:10px;">+ Folie</button>
-              </section>
-              <section class="editor-side-section">
-                <h4>Ebenen</h4>
-                <div id="blockList" class="editor-side-list"></div>
-              </section>
-              <section class="editor-side-section">
-                <h4>Vorlagen</h4>
-                <div id="templateList" class="editor-side-list"></div>
-                <button type="button" class="btn small" id="saveAsTemplate" style="width:100%;margin-top:10px;">★ Folie als Vorlage</button>
-                <div class="row" style="margin-top:8px;gap:6px;">
-                  <button type="button" class="btn small" id="exportSlideBtn" style="flex:1;">📤 Export</button>
-                  <button type="button" class="btn small" id="importSlideBtn" style="flex:1;">📥 Import</button>
+              <div class="editor-side-cols">
+                <section class="editor-side-section es-slides">
+                  <h4>Folien</h4>
+                  <div id="slidesList" class="editor-side-list"></div>
+                  <button type="button" class="btn small" id="addSlide" style="width:100%;margin-top:10px;">+ Folie</button>
+                </section>
+                <section class="editor-side-section es-layers">
+                  <h4>Ebenen</h4>
+                  <div id="blockList" class="editor-side-list"></div>
+                </section>
+              </div>
+              <details class="editor-side-templates" open>
+                <summary>Vorlagen</summary>
+                <div class="es-tpl-body">
+                  <div id="templateList" class="editor-side-list"></div>
+                  <button type="button" class="btn small" id="saveAsTemplate" style="width:100%;margin-top:10px;">★ Folie als Vorlage</button>
+                  <div class="row" style="margin-top:8px;gap:6px;">
+                    <button type="button" class="btn small" id="exportSlideBtn" style="flex:1;">📤 Export</button>
+                    <button type="button" class="btn small" id="importSlideBtn" style="flex:1;">📥 Import</button>
+                  </div>
+                  <input type="file" id="importSlideInput" accept="application/json,.json" hidden>
                 </div>
-                <input type="file" id="importSlideInput" accept="application/json,.json" hidden>
-              </section>
+              </details>
             </aside>
             <section class="editor-main">
               <div class="editor-toolbar">
