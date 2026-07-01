@@ -165,6 +165,16 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .slide-item-btn.active,.block-pill.active{border-color:rgba(95,140,255,.3);background:linear-gradient(135deg, rgba(95,140,255,.2), rgba(115,223,196,.08))}
 .slide-item-btn strong,.block-pill strong{display:block;font-size:13px}
 .slide-item-btn small,.block-pill small{display:block;color:var(--muted);margin-top:3px;font-size:11px}
+/* Folienliste: scrollbar bei vielen Folien + Drag&Drop-Sortierung */
+#slidesList{max-height:40vh;overflow-y:auto;padding-right:2px}
+.slide-item-btn{cursor:grab}
+.slide-item-btn.dragging{opacity:.4}
+.slide-item-btn.drop-before{box-shadow:inset 0 3px 0 0 var(--accent2)}
+.slide-item-btn.drop-after{box-shadow:inset 0 -3px 0 0 var(--accent2)}
+.slide-item-btn .si-grip{flex:0 0 auto;opacity:.35;font-size:15px;line-height:1;letter-spacing:-2px}
+.slide-item-btn .si-info{flex:1 1 auto;min-width:0}
+.slide-item-btn .si-del{flex:0 0 auto;cursor:pointer;opacity:.55;padding:0 2px}
+.slide-item-btn .si-del:hover{opacity:1}
 .block-pill{padding:0;overflow:hidden}
 .block-pill-info{flex:1;min-width:0;background:transparent;border:none;color:var(--text);text-align:left;cursor:pointer;padding:9px 11px}
 .layer-ctrl{display:flex;flex-direction:column;flex:0 0 auto;border-left:1px solid rgba(255,255,255,.08)}

@@ -116,19 +116,32 @@ function applySnap(block, nx, ny, cand, thr) {
 }
 
 /* ----- Render ----- */
+// Folien per Drag&Drop umsortieren -> die Reihenfolge ist zugleich die Playlist-Reihenfolge.
+function moveSlide(from, to) {
+  if (from == null || from < 0) return;
+  const arr = state.slides;
+  if (to > from) to--; // nach dem Entfernen verschieben sich die Indizes
+  if (to === from || to < 0 || to > arr.length) { if (to === from) return; }
+  const [item] = arr.splice(from, 1);
+  arr.splice(Math.max(0, Math.min(arr.length, to)), 0, item);
+  markDirty();
+  renderEditor();
+}
 function renderSlidesList() {
   const list = document.getElementById('slidesList');
   list.innerHTML = '';
   if (!state.slides.length) { list.innerHTML = '<div class="muted">Noch keine Folien.</div>'; return; }
-  state.slides.forEach(s => {
+  const clearDrop = () => list.querySelectorAll('.slide-item-btn').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+  state.slides.forEach((s, idx) => {
     const btn = document.createElement('button');
     btn.type = 'button';
+    btn.draggable = true;
     btn.className = 'slide-item-btn' + (s.id === state.selectedSlideId ? ' active' : '');
-    btn.innerHTML = `<span><strong>${esc(s.name || 'Folie')}</strong><small>${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s</small></span>`;
+    btn.innerHTML = `<span class="si-grip" title="Ziehen zum Umsortieren">⠿</span><span class="si-info"><strong>${esc(s.name || 'Folie')}</strong><small>${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s</small></span>`;
     const del = document.createElement('span');
+    del.className = 'si-del';
     del.textContent = '✕';
     del.title = 'Folie löschen';
-    del.style.cssText = 'cursor:pointer;opacity:.6;padding:0 4px;';
     del.addEventListener('click', (e) => {
       e.stopPropagation();
       if (state.slides.length <= 1) { toast('Mindestens eine Folie nötig.', 'err'); return; }
@@ -139,6 +152,33 @@ function renderSlidesList() {
     });
     btn.appendChild(del);
     btn.addEventListener('click', () => { state.selectedSlideId = s.id; state.selectedBlockId = (s.blocks && s.blocks[0]) ? s.blocks[0].id : null; renderEditor(); });
+    // Drag&Drop
+    btn.addEventListener('dragstart', (e) => {
+      state.slideDrag = idx;
+      btn.classList.add('dragging');
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(idx)); } catch (_) {} }
+    });
+    btn.addEventListener('dragend', () => { btn.classList.remove('dragging'); clearDrop(); state.slideDrag = null; });
+    btn.addEventListener('dragover', (e) => {
+      if (state.slideDrag == null) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const r = btn.getBoundingClientRect();
+      const after = (e.clientY - r.top) > r.height / 2;
+      clearDrop();
+      btn.classList.add(after ? 'drop-after' : 'drop-before');
+    });
+    btn.addEventListener('drop', (e) => {
+      if (state.slideDrag == null) return;
+      e.preventDefault();
+      const r = btn.getBoundingClientRect();
+      const after = (e.clientY - r.top) > r.height / 2;
+      const to = idx + (after ? 1 : 0);
+      const from = state.slideDrag;
+      clearDrop();
+      state.slideDrag = null;
+      moveSlide(from, to);
+    });
     list.appendChild(btn);
   });
 }
