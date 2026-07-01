@@ -116,7 +116,9 @@ function applySnap(block, nx, ny, cand, thr) {
 }
 
 /* ----- Render ----- */
-// Folien per Drag&Drop umsortieren -> die Reihenfolge ist zugleich die Playlist-Reihenfolge.
+// Folien per Drag&Drop umsortieren -> ordnet NUR die Editor-Liste (Organisation).
+// Die Anzeige-Reihenfolge auf dem Display steckt in der Playlist (slide_ids) und
+// wird dort per Drag&Drop gesetzt (siehe initPlaylists / movePlSlide).
 function moveSlide(from, to) {
   if (from == null || from < 0) return;
   const arr = state.slides;
@@ -629,31 +631,61 @@ async function importBackupFile(file) {
 /* ===================== PLAYLISTS ===================== */
 function initPlaylists() {
   const container = document.getElementById('itemContainer');
+
+  // Eine Folie innerhalb der Playlist umsortieren -> DAS ist die Anzeige-Reihenfolge
+  // auf dem Display (display/index.php iteriert slide_ids in dieser Reihenfolge).
+  function movePlSlide(pl, from, to) {
+    const arr = pl.slide_ids;
+    if (from == null || from < 0 || from >= arr.length) return;
+    if (to > from) to--; // nach dem Entfernen verschieben sich die Indizes
+    to = Math.max(0, Math.min(arr.length, to));
+    if (to === from) return;
+    const [it] = arr.splice(from, 1);
+    arr.splice(to, 0, it);
+    markDirty();
+    render();
+  }
+
   function render() {
     container.innerHTML = '';
     const hint = document.getElementById('emptyHint');
     if (!state.playlists.length) { hint.style.display = 'block'; hint.textContent = 'Noch keine Playlists – mit „+ Playlist" eine anlegen.'; }
     else hint.style.display = 'none';
+    const slideName = id => { const s = state.slides.find(x => x.id === id); return s ? (s.name || s.id) : id; };
     state.playlists.forEach(pl => {
+      // Nur noch existierende Folien behalten (geloeschte Folien aus der Reihenfolge werfen).
+      pl.slide_ids = (Array.isArray(pl.slide_ids) ? pl.slide_ids : []).filter(id => state.slides.some(s => s.id === id));
       const card = document.createElement('article');
       card.className = 'item-card';
-      const picker = (state.slides.length ? state.slides : []).map(sl => {
-        const on = (pl.slide_ids || []).includes(sl.id);
-        return `<label class="slide-pick"><input type="checkbox" data-slide="${esc(sl.id)}" ${on ? 'checked' : ''}> ${esc(sl.name || sl.id)}</label>`;
-      }).join('') || '<div class="muted">Noch keine Folien vorhanden – erst im Editor anlegen.</div>';
+      const rows = pl.slide_ids.map((id, i) =>
+        `<div class="pl-slide" draggable="true" data-idx="${i}"><span class="si-grip" title="Ziehen zum Sortieren">⠿</span><span class="pl-slide-name"><span class="pl-num">${i + 1}.</span> ${esc(slideName(id))}</span><span class="pl-del" data-rm="${esc(id)}" title="Aus Playlist entfernen">✕</span></div>`
+      ).join('') || '<div class="muted">Noch keine Folien – unten hinzufügen.</div>';
+      const notIn = state.slides.filter(s => !pl.slide_ids.includes(s.id));
+      let adder;
+      if (!state.slides.length) adder = '<div class="muted" style="margin-top:10px;">Noch keine Folien vorhanden – erst im Editor anlegen.</div>';
+      else if (!notIn.length) adder = '<div class="muted" style="margin-top:10px;">Alle Folien sind in dieser Playlist.</div>';
+      else adder = `<div class="row" style="margin-top:10px;"><select data-addsel style="flex:1;"><option value="">+ Folie hinzufügen …</option>${notIn.map(s => `<option value="${esc(s.id)}">${esc(s.name || s.id)}</option>`).join('')}</select></div>`;
       card.innerHTML = `
         <div class="head"><strong>${esc(pl.name || 'Playlist')}</strong>
           <button type="button" class="btn small danger" data-del>Entfernen</button></div>
         <label class="field">Name<input type="text" data-name value="${esc(pl.name || '')}"></label>
-        <div><div class="muted" style="margin-bottom:8px;">Folien in dieser Playlist (Reihenfolge = Editor-Reihenfolge):</div>
-          <div class="slide-picker">${picker}</div></div>`;
+        <div><div class="muted" style="margin-bottom:8px;">Folien in dieser Playlist – ziehen zum Sortieren (Reihenfolge = Anzeige-Reihenfolge auf dem Display):</div>
+          <div class="pl-slides">${rows}</div>
+          ${adder}</div>`;
       card.querySelector('[data-del]').addEventListener('click', () => { state.playlists = state.playlists.filter(x => x !== pl); markDirty(); render(); });
       card.querySelector('[data-name]').addEventListener('input', e => { pl.name = e.target.value; markDirty(); });
-      card.querySelectorAll('[data-slide]').forEach(cb => cb.addEventListener('change', () => {
-        const ids = state.slides.filter(sl => card.querySelector(`[data-slide="${CSS.escape(sl.id)}"]`)?.checked).map(sl => sl.id);
-        pl.slide_ids = ids;
-        markDirty();
-      }));
+      const addSel = card.querySelector('[data-addsel]');
+      if (addSel) addSel.addEventListener('change', () => { if (addSel.value) { pl.slide_ids.push(addSel.value); markDirty(); render(); } });
+      card.querySelectorAll('[data-rm]').forEach(el => el.addEventListener('click', () => { const id = el.getAttribute('data-rm'); pl.slide_ids = pl.slide_ids.filter(x => x !== id); markDirty(); render(); }));
+      // Drag&Drop-Sortierung innerhalb der Playlist
+      const clearDrop = () => card.querySelectorAll('.pl-slide').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+      let dragFrom = null;
+      card.querySelectorAll('.pl-slide').forEach(row => {
+        row.addEventListener('dragstart', e => { dragFrom = Number(row.dataset.idx); row.classList.add('dragging'); if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', row.dataset.idx); } catch (_) {} } });
+        row.addEventListener('dragend', () => { row.classList.remove('dragging'); clearDrop(); dragFrom = null; });
+        row.addEventListener('dragover', e => { if (dragFrom == null) return; e.preventDefault(); if (e.dataTransfer) e.dataTransfer.dropEffect = 'move'; const r = row.getBoundingClientRect(); const after = (e.clientY - r.top) > r.height / 2; clearDrop(); row.classList.add(after ? 'drop-after' : 'drop-before'); });
+        row.addEventListener('drop', e => { if (dragFrom == null) return; e.preventDefault(); const r = row.getBoundingClientRect(); const after = (e.clientY - r.top) > r.height / 2; const to = Number(row.dataset.idx) + (after ? 1 : 0); const from = dragFrom; clearDrop(); dragFrom = null; movePlSlide(pl, from, to); });
+      });
       container.appendChild(card);
     });
   }

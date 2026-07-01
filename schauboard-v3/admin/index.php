@@ -236,6 +236,17 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .slide-picker{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
 .slide-pick{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);font-size:13px;cursor:pointer}
 .slide-pick input{width:16px;height:16px;min-height:auto}
+/* Playlist: sortierbare Folienliste (Reihenfolge = Anzeige-Reihenfolge) */
+.pl-slides{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
+.pl-slide{display:flex;align-items:center;gap:9px;padding:9px 11px;border-radius:10px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:grab}
+.pl-slide.dragging{opacity:.4}
+.pl-slide.drop-before{box-shadow:inset 0 3px 0 0 var(--accent2)}
+.pl-slide.drop-after{box-shadow:inset 0 -3px 0 0 var(--accent2)}
+.pl-slide .si-grip{flex:0 0 auto;opacity:.35;font-size:15px;line-height:1;letter-spacing:-2px}
+.pl-slide .pl-slide-name{flex:1 1 auto;min-width:0;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pl-slide .pl-num{color:var(--muted);margin-right:3px}
+.pl-slide .pl-del{flex:0 0 auto;cursor:pointer;opacity:.5;padding:2px 5px;border-radius:6px}
+.pl-slide .pl-del:hover{opacity:1;color:var(--danger)}
 .day-picker{display:flex;gap:6px;flex-wrap:wrap}
 .day-chip{padding:7px 11px;border-radius:999px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);font-size:12px;font-weight:700;cursor:pointer;user-select:none}
 .day-chip.on{background:linear-gradient(135deg, rgba(95,140,255,.25), rgba(115,223,196,.12));border-color:rgba(95,140,255,.35)}
