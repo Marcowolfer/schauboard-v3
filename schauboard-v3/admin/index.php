@@ -160,7 +160,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .editor-sidebar{border-right:1px solid rgba(255,255,255,.06);background:rgba(12,18,32,.7);display:grid;grid-template-rows:minmax(0,1fr) auto;min-height:0}
 .editor-side-section{padding:12px;border-bottom:1px solid rgba(255,255,255,.06);overflow:auto}
 .editor-side-section h4{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#7f8ead;margin-bottom:10px}
-.editor-side-list{display:grid;gap:7px}
+.editor-side-list{display:grid;grid-template-columns:minmax(0,1fr);gap:7px}
 .slide-item-btn,.block-pill{width:100%;padding:9px 11px;border-radius:11px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);color:var(--text);text-align:left;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:8px}
 .slide-item-btn.active,.block-pill.active{border-color:rgba(95,140,255,.3);background:linear-gradient(135deg, rgba(95,140,255,.2), rgba(115,223,196,.08))}
 .slide-item-btn strong,.block-pill strong{display:block;font-size:13px}
@@ -180,8 +180,8 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .editor-side-templates[open]>summary::before{transform:rotate(90deg)}
 .editor-side-templates>summary:hover{color:#c8d3ea}
 .editor-side-templates .es-tpl-body{padding:0 12px 12px;max-height:26vh;overflow:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
-/* Folienliste fuellt jetzt ihre Spalte (kein fixer 40vh-Deckel mehr); Drag&Drop bleibt vertikal */
-#slidesList{max-height:none;overflow-y:auto;padding-right:2px}
+/* Folienliste fuellt jetzt ihre Spalte (kein fixer 40vh-Deckel mehr; die Sektion scrollt); Drag&Drop bleibt vertikal */
+#slidesList{max-height:none;padding-right:2px}
 .slide-item-btn{cursor:grab;position:relative}
 .slide-item-btn.dragging{opacity:.4}
 .slide-item-btn.drop-before{box-shadow:inset 0 3px 0 0 var(--accent2)}
