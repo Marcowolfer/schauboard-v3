@@ -53,6 +53,36 @@ async function copyText(text) {
 }
 
 /* ===================== EDITOR ===================== */
+/* Farbwaehler: natives color-Input neben jedem Hex-Feld, beidseitig synchron. */
+const COLOR_PICKS = [
+  ['mColorPick', 'mColor'], ['mBgPick', 'mBg'],
+  ['mHeaderBgPick', 'mHeaderBg'], ['mHeaderColorPick', 'mHeaderColor'],
+  ['mCellColorPick', 'mCellColor'], ['mBorderColorPick', 'mBorderColor'],
+  ['slideBgColorPick', 'slideBgColor'],
+];
+const HEX6 = /^#[0-9a-fA-F]{6}$/;
+function syncColorPicks() {
+  COLOR_PICKS.forEach(([p, t]) => {
+    const pe = document.getElementById(p), te = document.getElementById(t);
+    if (pe && te && HEX6.test(te.value.trim())) pe.value = te.value.trim().toLowerCase();
+  });
+}
+function initColorPicks() {
+  COLOR_PICKS.forEach(([p, t]) => {
+    const pe = document.getElementById(p), te = document.getElementById(t);
+    if (!pe || !te) return;
+    pe.addEventListener('input', () => {
+      te.value = pe.value;
+      // vorhandene Listener mitziehen (z. B. Folien-Hintergrund live + markDirty)
+      te.dispatchEvent(new Event('input', {bubbles: true}));
+    });
+    te.addEventListener('input', () => {
+      const v = te.value.trim();
+      if (HEX6.test(v)) pe.value = v.toLowerCase();
+    });
+  });
+}
+
 function getSlide() { return state.slides.find(s => s.id === state.selectedSlideId) || null; }
 function getBlock() { const s = getSlide(); return s ? (s.blocks || []).find(b => b.id === state.selectedBlockId) || null : null; }
 
@@ -340,6 +370,7 @@ function renderSlideFields() {
   });
   const meta = document.getElementById('editorMeta');
   meta.textContent = s ? `${s.name || 'Folie'} · ${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s` : 'Noch keine Folie ausgewählt.';
+  syncColorPicks();
 }
 
 function renderEditor() {
@@ -407,6 +438,7 @@ function openModal(blockId) {
   state.tableDraft = Array.isArray(b.table_data) ? JSON.parse(JSON.stringify(b.table_data)) : [['Spalte 1', 'Spalte 2'], ['Wert', 'Wert']];
   renderTableGrid();
   showFields(b.type);
+  syncColorPicks(); // Swatches an die frisch gesetzten Hex-Werte angleichen
   document.getElementById('blockModal').classList.add('open');
 }
 function closeModal() { state.modalBlockId = null; document.getElementById('blockModal').classList.remove('open'); }
@@ -893,6 +925,7 @@ function initEditor() {
     palette.appendChild(btn);
   });
 
+  initColorPicks();
   ensureEditorSelection();
   renderEditor();
 

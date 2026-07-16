@@ -259,6 +259,10 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .modal-head h4{font-size:20px;letter-spacing:-.02em}
 .modal-actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .field-hidden{display:none !important}
+/* Farbfelder: natives Farbwaehler-Swatch neben dem Hex-Feld */
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type=color]{flex:0 0 46px;width:46px;min-height:38px;padding:3px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer}
+.color-row input[type=text]{flex:1;min-width:0}
 .table-editor{display:grid;gap:10px}
 .table-grid{overflow:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px}
 .table-grid table{border-collapse:collapse;width:100%}
@@ -411,7 +415,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
                   <summary class="muted" style="cursor:pointer;">Folie anpassen</summary>
                   <div class="row" style="margin-top:10px;">
                     <label class="field">ID<input type="text" id="slideId"></label>
-                    <label class="field">Hintergrundfarbe<input type="text" id="slideBgColor" placeholder="#1a1a2e"></label>
+                    <label class="field">Hintergrundfarbe<span class="color-row"><input type="color" id="slideBgColorPick" aria-label="Farbe wählen"><input type="text" id="slideBgColor" placeholder="#1a1a2e"></span></label>
                     <label class="field">Hintergrundbild (URL)<input type="text" id="slideBgImage" placeholder="optional"></label>
                   </div>
                 </details>
@@ -506,7 +510,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       </label>
       <label class="checkbox" data-f="show_date"><input type="checkbox" id="mShowDate"> Datum anzeigen</label>
       <label class="field" data-f="speed">Tempo (10–200)<input type="number" id="mSpeed" min="10" max="200"></label>
-      <label class="field" data-f="bg">Hintergrund<input type="text" id="mBg"></label>
+      <label class="field" data-f="bg">Hintergrund<span class="color-row"><input type="color" id="mBgPick" aria-label="Farbe wählen"><input type="text" id="mBg"></span></label>
       <label class="field" data-f="url">Webseiten-URL<input type="text" id="mUrl" placeholder="https://…"></label>
       <label class="field" data-f="refresh_minutes">Neu laden alle … Min. (0 = nie)<input type="number" id="mRefresh" min="0" max="1440"></label>
       <label class="field" data-f="zoom">Zoom (%)<input type="number" id="mZoom" min="25" max="200"></label>
@@ -515,7 +519,7 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <label class="field" data-f="target">Zieltermin<input type="datetime-local" id="mTarget"></label>
       <label class="field" data-f="clabel">Beschriftung<input type="text" id="mCLabel"></label>
       <label class="field" data-f="font_size">Schriftgrösse<input type="number" id="mFont" min="10" max="400"></label>
-      <label class="field" data-f="color">Farbe<input type="text" id="mColor"></label>
+      <label class="field" data-f="color">Farbe<span class="color-row"><input type="color" id="mColorPick" aria-label="Farbe wählen"><input type="text" id="mColor"></span></label>
       <label class="field" data-f="align">Ausrichtung
         <select id="mAlign"><option value="left">Links</option><option value="center">Mitte</option><option value="right">Rechts</option></select>
       </label>
@@ -536,10 +540,10 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
           <textarea id="tblPaste" class="paste-zone" placeholder="Zellen in Excel markieren, kopieren, hier einfügen…"></textarea>
         </label>
         <div class="form-grid">
-          <label class="field">Kopfzeile-Hintergrund<input type="text" id="mHeaderBg"></label>
-          <label class="field">Kopfzeile-Farbe<input type="text" id="mHeaderColor"></label>
-          <label class="field">Zellen-Farbe<input type="text" id="mCellColor"></label>
-          <label class="field">Rahmen-Farbe<input type="text" id="mBorderColor"></label>
+          <label class="field">Kopfzeile-Hintergrund<span class="color-row"><input type="color" id="mHeaderBgPick" aria-label="Farbe wählen"><input type="text" id="mHeaderBg"></span></label>
+          <label class="field">Kopfzeile-Farbe<span class="color-row"><input type="color" id="mHeaderColorPick" aria-label="Farbe wählen"><input type="text" id="mHeaderColor"></span></label>
+          <label class="field">Zellen-Farbe<span class="color-row"><input type="color" id="mCellColorPick" aria-label="Farbe wählen"><input type="text" id="mCellColor"></span></label>
+          <label class="field">Rahmen-Farbe<span class="color-row"><input type="color" id="mBorderColorPick" aria-label="Farbe wählen"><input type="text" id="mBorderColor"></span></label>
         </div>
       </div>
 

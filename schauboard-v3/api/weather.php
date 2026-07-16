@@ -25,10 +25,17 @@ $cacheFile = $cacheDir . '/weather_' . md5($cityRaw) . '.json';
 $cacheTtl = 600;          // 10 Min frisch
 $staleMaxAge = 3 * 3600;  // alten Cache hoechstens 3h als Fallback ausgeben
 
-// 1) Frischer Cache -> direkt ausliefern.
+// 1) Frischer Cache -> direkt ausliefern. Aber nur, wenn er das AKTUELLE
+// Antwortformat hat (forecast-Feld): direkt nach einem Update liegt sonst noch
+// die alte Struktur im Cache und die Vorschau bliebe minutenlang leer.
 if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $cacheTtl) {
-    echo file_get_contents($cacheFile);
-    exit;
+    $cachedRaw = (string) file_get_contents($cacheFile);
+    $cachedData = json_decode($cachedRaw, true);
+    if (is_array($cachedData) && array_key_exists('forecast', $cachedData)) {
+        echo $cachedRaw;
+        exit;
+    }
+    // altes Format -> ignorieren und frisch holen
 }
 
 // Kleiner JSON-GET-Helfer (nur HTTP 200 zaehlt als Erfolg).
