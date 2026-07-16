@@ -37,6 +37,8 @@ config.local.php
 **/data/*.json
 **/data/*.bak.*
 **/data/*.tmp
+# Schutz-.htaccess wird von der App selbst angelegt (self-healing)
+**/data/.htaccess
 
 # Hochgeladene Medien (bleiben lokal, nicht ins Repo)
 **/uploads/*

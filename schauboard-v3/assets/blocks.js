@@ -20,6 +20,8 @@ window.SchauboardBlocks = (function () {
     heading:   {label: 'Titel',    icon: '🔠', w: 900, h: 180},
     clock:     {label: 'Uhr',      icon: '🕒', w: 360, h: 150},
     image:     {label: 'Bild',     icon: '🖼️', w: 520, h: 360},
+    gallery:   {label: 'Diashow',  icon: '🎞️', w: 760, h: 480},
+    shape:     {label: 'Form',     icon: '🟦', w: 600, h: 300},
     weather:   {label: 'Wetter',   icon: '⛅', w: 460, h: 360},
     ticker:    {label: 'Laufband', icon: '📰', w: 1920, h: 110},
     table:     {label: 'Tabelle',  icon: '▦',  w: 760, h: 420},
@@ -61,7 +63,9 @@ window.SchauboardBlocks = (function () {
     if (type === 'heading') { base.text = 'Überschrift'; base.bold = true; }
     if (type === 'clock') { base.clock_format = 'HH:MM'; base.show_date = false; }
     if (type === 'image') { base.src = ''; base.fit = 'cover'; }
-    if (type === 'weather') { base.city = ''; base.font_size = 40; } // leer = globalen Standardort aus den Einstellungen nutzen
+    if (type === 'gallery') { base.images = []; base.interval = 6; base.fit = 'cover'; }
+    if (type === 'shape') { base.kind = 'rect'; base.color = '#5f8cff'; base.opacity = 100; base.radius = 24; }
+    if (type === 'weather') { base.city = ''; base.font_size = 40; base.show_forecast = false; } // leer = globalen Standardort aus den Einstellungen nutzen
     if (type === 'ticker') { base.text = 'Willkommen bei Schauboard – hier läuft Ihr Lauftext.'; base.speed = 60; base.bg = '#313244'; base.font_size = 48; }
     if (type === 'table') {
       base.table_data = [['Produkt', 'Preis'], ['Kaffee', 'CHF 4.50'], ['Tee', 'CHF 3.80']];
@@ -163,6 +167,55 @@ window.SchauboardBlocks = (function () {
       return inner;
     }
 
+    if (type === 'gallery') {
+      inner.style.padding = '0';
+      var gImgs = Array.isArray(block.images) ? block.images.filter(Boolean) : [];
+      if (!gImgs.length) {
+        inner.innerHTML = '<div class="sb-block-empty">Diashow – Bilder im Editor hinzufügen</div>';
+        return inner;
+      }
+      var gWrap = document.createElement('div');
+      gWrap.className = 'sb-gallery';
+      // Rotation nur live (Display/Vorschau); im Editor statisch das erste Bild,
+      // sonst wuerde jeder Canvas-Neuaufbau Timer ansammeln.
+      if (mode === 'display') {
+        gWrap.dataset.gallery = '1';
+        gWrap.dataset.interval = String(Math.max(2, num(block.interval, 6)));
+      }
+      gImgs.forEach(function (src, gi) {
+        var gImg = document.createElement('img');
+        gImg.src = src;
+        gImg.alt = '';
+        gImg.draggable = false; // wie beim Bild-Block: nativen Drag verhindern
+        gImg.style.objectFit = block.fit || 'cover';
+        gImg.className = 'sb-g-img' + (gi === 0 ? ' on' : '');
+        gWrap.appendChild(gImg);
+      });
+      if (mode === 'editor' && gImgs.length > 1) {
+        var gBadge = document.createElement('div');
+        gBadge.className = 'sb-g-badge';
+        gBadge.textContent = '🎞️ ' + gImgs.length + ' Bilder · ' + Math.max(2, num(block.interval, 6)) + 's';
+        gWrap.appendChild(gBadge);
+      }
+      inner.appendChild(gWrap);
+      return inner;
+    }
+
+    if (type === 'shape') {
+      inner.style.padding = '0';
+      var shape = document.createElement('div');
+      shape.className = 'sb-shape';
+      shape.style.background = block.color || '#5f8cff';
+      shape.style.opacity = String(Math.max(5, Math.min(100, num(block.opacity, 100))) / 100);
+      if ((block.kind || 'rect') === 'ellipse') {
+        shape.style.borderRadius = '50%';
+      } else {
+        shape.style.borderRadius = (Math.max(0, Math.min(400, num(block.radius, 24))) * sc) + 'px';
+      }
+      inner.appendChild(shape);
+      return inner;
+    }
+
     if (type === 'weather') {
       var wFont = autoFontSize(block, num(block.font_size, 40), 460, 360) * sc;
       // Eigene Stadt am Block hat Vorrang, sonst globaler Standardort aus den Einstellungen.
@@ -173,7 +226,8 @@ window.SchauboardBlocks = (function () {
         '<div class="sb-w-emoji" style="font-size:' + (wFont * 2.2) + 'px">⛅</div>' +
         '<div class="sb-w-city" style="font-size:' + wFont + 'px">' + escapeHtml(wCity) + '</div>' +
         '<div class="sb-w-temp" style="font-size:' + (wFont * 1.6) + 'px">-- °C</div>' +
-        '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">Lädt…</div>';
+        '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">Lädt…</div>' +
+        (block.show_forecast ? '<div class="sb-w-fc" style="font-size:' + (wFont * 0.72) + 'px"></div>' : '');
       return inner;
     }
 
@@ -398,16 +452,29 @@ window.SchauboardBlocks = (function () {
     var emoji = el.querySelector('.sb-w-emoji');
     var temp = el.querySelector('.sb-w-temp');
     var desc = el.querySelector('.sb-w-desc');
+    var fc = el.querySelector('.sb-w-fc');
     if (!data || data.error) {
       // Sichtbarer Offline-Zustand statt dauerhaftem "Laedt…" (typisch im reinen LAN ohne Internet).
       if (emoji) emoji.textContent = '🌐';
       if (temp) temp.textContent = '–';
       if (desc) desc.textContent = 'Wetter offline';
+      if (fc) fc.innerHTML = '';
       return;
     }
     if (emoji && data.emoji) emoji.textContent = data.emoji;
     if (temp) temp.textContent = data.temp_c + ' °C';
     if (desc) desc.textContent = data.desc || '';
+    if (fc) {
+      // 3-Tage-Vorschau; aeltere Cache-Antworten ohne forecast-Feld -> Zeile leer lassen.
+      var days = Array.isArray(data.forecast) ? data.forecast : [];
+      fc.innerHTML = days.map(function (d) {
+        return '<div class="sb-w-fc-day">' +
+          '<span class="sb-w-fc-name">' + escapeHtml(d.day || '') + '</span>' +
+          '<span class="sb-w-fc-emoji">' + escapeHtml(d.emoji || '') + '</span>' +
+          '<span class="sb-w-fc-temp">' + escapeHtml(d.tmax != null ? d.tmax : '-') + '°<small>/' + escapeHtml(d.tmin != null ? d.tmin : '-') + '°</small></span>' +
+          '</div>';
+      }).join('');
+    }
   }
 
   function loadWeather(root, endpoint) {
@@ -437,6 +504,27 @@ window.SchauboardBlocks = (function () {
         })
         .catch(function () {})
         .finally(function () { weatherPending.delete(city); });
+    });
+  }
+
+  // Diashow: Bilder im Block rotieren (Ueberblendung via CSS-Klasse .on).
+  // Gleiches Muster wie webpageTimers: alte Intervalle raeumen, neu aufsetzen –
+  // applyLive darf beliebig oft laufen (Display-Resize), ohne Timer zu stapeln.
+  var galleryTimers = [];
+  function setupGalleries(root) {
+    galleryTimers.forEach(clearInterval);
+    galleryTimers = [];
+    root.querySelectorAll('[data-gallery]').forEach(function (wrap) {
+      var imgs = wrap.querySelectorAll('.sb-g-img');
+      if (imgs.length < 2) return;
+      var idx = 0;
+      imgs.forEach(function (im, i) { im.classList.toggle('on', i === 0); });
+      var ms = Math.max(2, Number(wrap.dataset.interval) || 6) * 1000;
+      galleryTimers.push(setInterval(function () {
+        imgs[idx].classList.remove('on');
+        idx = (idx + 1) % imgs.length;
+        imgs[idx].classList.add('on');
+      }, ms));
     });
   }
 
@@ -486,6 +574,7 @@ window.SchauboardBlocks = (function () {
     }
     setupWebpageRefresh(root);
     setupTickers(root);
+    setupGalleries(root);
   }
 
   return {

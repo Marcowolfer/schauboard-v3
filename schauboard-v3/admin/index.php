@@ -483,7 +483,24 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <label class="field" data-f="fit">Darstellung
         <select id="mFit"><option value="cover">Füllen (cover)</option><option value="contain">Einpassen (contain)</option><option value="fill">Strecken</option></select>
       </label>
+      <label class="field" data-f="shape_kind">Form
+        <select id="mShapeKind"><option value="rect">Rechteck</option><option value="ellipse">Ellipse / Kreis</option></select>
+      </label>
+      <label class="field" data-f="opacity">Deckkraft (%)<input type="number" id="mOpacity" min="5" max="100"></label>
+      <label class="field" data-f="radius">Ecken-Radius (nur Rechteck)<input type="number" id="mRadius" min="0" max="400"></label>
+      <div class="full" data-f="gallery" style="display:grid;gap:10px;">
+        <label class="field">Bilder der Diashow – ein Bild (URL/Pfad) pro Zeile, Reihenfolge = Abspielreihenfolge
+          <textarea id="mGalleryList" style="min-height:110px;font-family:Consolas,monospace;font-size:12px;" placeholder="uploads/bild1.jpg&#10;uploads/bild2.jpg&#10;https://…"></textarea>
+        </label>
+        <div class="form-grid">
+          <label class="field">Bilder hochladen (mehrere möglich)
+            <input type="file" id="mGalleryUpload" accept="image/*" multiple>
+          </label>
+          <label class="field">Wechsel alle … Sekunden<input type="number" id="mGalleryInterval" min="2" max="120"></label>
+        </div>
+      </div>
       <label class="field" data-f="city">Ort<input type="text" id="mCity"></label>
+      <label class="checkbox" data-f="forecast"><input type="checkbox" id="mForecast"> 3-Tage-Vorschau anzeigen</label>
       <label class="field" data-f="clock_format">Format
         <select id="mClockFormat"><option value="HH:MM">HH:MM</option><option value="HH:MM:SS">HH:MM:SS</option></select>
       </label>

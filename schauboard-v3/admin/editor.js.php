@@ -5,7 +5,9 @@ const TYPE_FIELDS = {
   heading:   ['type','text','font_size','color','align','bold','advanced'],
   clock:     ['type','clock_format','show_date','font_size','color','advanced'],
   image:     ['type','src','upload','fit','advanced'],
-  weather:   ['type','city','font_size','color','advanced'],
+  gallery:   ['type','gallery','fit','advanced'],
+  shape:     ['type','shape_kind','color','opacity','radius','advanced'],
+  weather:   ['type','city','forecast','font_size','color','advanced'],
   ticker:    ['type','text','speed','bg','font_size','color','advanced'],
   table:     ['type','table','font_size','advanced'],
   webpage:   ['type','url','refresh_minutes','zoom','advanced'],
@@ -372,6 +374,12 @@ function openModal(blockId) {
   document.getElementById('mFit').value = b.fit || 'cover';
   document.getElementById('mCity').value = b.city || '';
   document.getElementById('mCity').placeholder = 'Standardort: ' + ((APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich');
+  document.getElementById('mForecast').checked = !!b.show_forecast;
+  document.getElementById('mShapeKind').value = b.kind || 'rect';
+  document.getElementById('mOpacity').value = Number(b.opacity ?? 100);
+  document.getElementById('mRadius').value = Number(b.radius ?? 24);
+  document.getElementById('mGalleryList').value = Array.isArray(b.images) ? b.images.join('\n') : '';
+  document.getElementById('mGalleryInterval').value = Number(b.interval || 6);
   document.getElementById('mClockFormat').value = b.clock_format || 'HH:MM';
   document.getElementById('mShowDate').checked = !!b.show_date;
   document.getElementById('mSpeed').value = Number(b.speed || 60);
@@ -415,7 +423,13 @@ function applyModal() {
   if (t === 'image') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
   if (t === 'video') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
   if (t === 'clock') { b.clock_format = document.getElementById('mClockFormat').value; b.show_date = document.getElementById('mShowDate').checked; }
-  if (t === 'weather') { b.city = document.getElementById('mCity').value.trim(); } // leer = globalen Standardort nutzen
+  if (t === 'weather') { b.city = document.getElementById('mCity').value.trim(); b.show_forecast = document.getElementById('mForecast').checked; } // leer = globalen Standardort nutzen
+  if (t === 'shape') { b.kind = document.getElementById('mShapeKind').value; b.opacity = clamp(Number(document.getElementById('mOpacity').value || 100), 5, 100); b.radius = clamp(Number(document.getElementById('mRadius').value || 0), 0, 400); }
+  if (t === 'gallery') {
+    b.images = document.getElementById('mGalleryList').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 30);
+    b.interval = clamp(Number(document.getElementById('mGalleryInterval').value || 6), 2, 120);
+    b.fit = document.getElementById('mFit').value;
+  }
   if (t === 'webpage') { b.url = document.getElementById('mUrl').value.trim(); b.refresh_minutes = Number(document.getElementById('mRefresh').value || 0); b.zoom = Number(document.getElementById('mZoom').value || 100); }
   if (t === 'qrcode') { b.data = document.getElementById('mData').value.trim(); b.label = document.getElementById('mQLabel').value.trim(); }
   if (t === 'countdown') { b.target = document.getElementById('mTarget').value; b.label = document.getElementById('mCLabel').value.trim(); }
@@ -1002,6 +1016,29 @@ function initEditor() {
       markDirty();
       toast('Bild hochgeladen ✓');
     } catch (err) { toast(err.message, 'err'); }
+    e.target.value = '';
+  });
+
+  // Diashow: mehrere Bilder hochladen -> URLs an die Liste anhaengen (eine pro Zeile).
+  document.getElementById('mGalleryUpload').addEventListener('change', async e => {
+    const files = Array.from(e.target.files || []);
+    if (!files.length) return;
+    const ta = document.getElementById('mGalleryList');
+    let okCount = 0;
+    for (const file of files) {
+      const fd = new FormData(); fd.append('file', file);
+      try {
+        const res = await fetch('../api/upload.php', {method: 'POST', body: fd});
+        let data = null;
+        try { data = await res.json(); } catch (_) { /* keine JSON-Antwort */ }
+        if (!res.ok || !data || !data.ok) {
+          throw new Error((data && data.error) ? data.error : ('Upload fehlgeschlagen (HTTP ' + res.status + '). Datei evtl. zu gross.'));
+        }
+        ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + data.url;
+        okCount++;
+      } catch (err) { toast(err.message, 'err'); }
+    }
+    if (okCount) { markDirty(); toast(okCount + (okCount === 1 ? ' Bild' : ' Bilder') + ' hochgeladen ✓'); }
     e.target.value = '';
   });
 

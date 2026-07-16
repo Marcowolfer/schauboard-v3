@@ -99,35 +99,60 @@ if (!is_array($geo) || !isset($geo['lat'], $geo['lon'])) {
     @file_put_contents($geoCache, json_encode($geo));
 }
 
-// 3) Aktuelles Wetter holen.
+// 3) Aktuelles Wetter + Tages-Vorhersage holen (heute + 3 Folgetage).
 $wx = $fetchJson('https://api.open-meteo.com/v1/forecast?latitude=' . rawurlencode((string) $geo['lat'])
     . '&longitude=' . rawurlencode((string) $geo['lon'])
-    . '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&timezone=auto');
+    . '&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m'
+    . '&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=4&timezone=auto');
 $cur = is_array($wx) ? ($wx['current'] ?? null) : null;
 if (!is_array($cur) || !isset($cur['temperature_2m'])) {
     $serveStaleOrError();
 }
 
-// WMO-Wettercode -> Emoji + deutscher Text.
-$code = (int) ($cur['weather_code'] ?? 0);
-[$emoji, $desc] = match (true) {
-    $code === 0 => ['☀️', 'Klar'],
-    $code === 1 => ['🌤️', 'Überwiegend klar'],
-    $code === 2 => ['⛅', 'Teils bewölkt'],
-    $code === 3 => ['☁️', 'Bewölkt'],
-    in_array($code, [45, 48], true) => ['🌫️', 'Nebel'],
-    in_array($code, [51, 53, 55], true) => ['🌦️', 'Niesel'],
-    in_array($code, [56, 57], true) => ['🌧️', 'Gefrierender Niesel'],
-    in_array($code, [61, 63, 65], true) => ['🌧️', 'Regen'],
-    in_array($code, [66, 67], true) => ['🌧️', 'Gefrierender Regen'],
-    in_array($code, [71, 73, 75], true) => ['🌨️', 'Schnee'],
-    $code === 77 => ['🌨️', 'Schneegriesel'],
-    in_array($code, [80, 81, 82], true) => ['🌧️', 'Regenschauer'],
-    in_array($code, [85, 86], true) => ['🌨️', 'Schneeschauer'],
-    $code === 95 => ['⛈️', 'Gewitter'],
-    in_array($code, [96, 99], true) => ['⛈️', 'Gewitter mit Hagel'],
-    default => ['🌡️', ''],
+// WMO-Wettercode -> Emoji + deutscher Text (fuer aktuell UND Vorhersage-Tage).
+$wmo = static function (int $code): array {
+    return match (true) {
+        $code === 0 => ['☀️', 'Klar'],
+        $code === 1 => ['🌤️', 'Überwiegend klar'],
+        $code === 2 => ['⛅', 'Teils bewölkt'],
+        $code === 3 => ['☁️', 'Bewölkt'],
+        in_array($code, [45, 48], true) => ['🌫️', 'Nebel'],
+        in_array($code, [51, 53, 55], true) => ['🌦️', 'Niesel'],
+        in_array($code, [56, 57], true) => ['🌧️', 'Gefrierender Niesel'],
+        in_array($code, [61, 63, 65], true) => ['🌧️', 'Regen'],
+        in_array($code, [66, 67], true) => ['🌧️', 'Gefrierender Regen'],
+        in_array($code, [71, 73, 75], true) => ['🌨️', 'Schnee'],
+        $code === 77 => ['🌨️', 'Schneegriesel'],
+        in_array($code, [80, 81, 82], true) => ['🌧️', 'Regenschauer'],
+        in_array($code, [85, 86], true) => ['🌨️', 'Schneeschauer'],
+        $code === 95 => ['⛈️', 'Gewitter'],
+        in_array($code, [96, 99], true) => ['⛈️', 'Gewitter mit Hagel'],
+        default => ['🌡️', ''],
+    };
 };
+
+[$emoji, $desc] = $wmo((int) ($cur['weather_code'] ?? 0));
+
+// 3-Tage-Vorschau (morgen + 2 Folgetage; Index 0 = heute wird uebersprungen).
+$forecast = [];
+$daily = is_array($wx) ? ($wx['daily'] ?? null) : null;
+if (is_array($daily) && isset($daily['time']) && is_array($daily['time'])) {
+    $dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    $count = count($daily['time']);
+    for ($i = 1; $i < $count && count($forecast) < 3; $i++) {
+        $ts = strtotime((string) $daily['time'][$i]);
+        if ($ts === false) {
+            continue;
+        }
+        [$dEmoji] = $wmo((int) ($daily['weather_code'][$i] ?? 0));
+        $forecast[] = [
+            'day' => $dayNames[(int) date('N', $ts) - 1],
+            'emoji' => $dEmoji,
+            'tmax' => isset($daily['temperature_2m_max'][$i]) ? (string) round((float) $daily['temperature_2m_max'][$i]) : '-',
+            'tmin' => isset($daily['temperature_2m_min'][$i]) ? (string) round((float) $daily['temperature_2m_min'][$i]) : '-',
+        ];
+    }
+}
 
 $result = [
     'city' => $geo['name'] ?? $cityRaw,
@@ -137,6 +162,7 @@ $result = [
     'humidity' => (string) ($cur['relative_humidity_2m'] ?? '--'),
     'wind_kmph' => isset($cur['wind_speed_10m']) ? (string) round((float) $cur['wind_speed_10m']) : '--',
     'emoji' => $emoji,
+    'forecast' => $forecast,
     'updated' => date('H:i'),
 ];
 

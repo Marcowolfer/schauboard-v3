@@ -121,7 +121,7 @@ function schauboard_sanitize_table($value): array
 
 function schauboard_block_types(): array
 {
-    return ['text', 'heading', 'clock', 'image', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
+    return ['text', 'heading', 'clock', 'image', 'gallery', 'shape', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
 }
 
 function schauboard_sanitize_block(array $block): array
@@ -160,8 +160,30 @@ function schauboard_sanitize_block(array $block): array
             $clean['src'] = schauboard_sanitize_urlish($block['src'] ?? '');
             $clean['fit'] = in_array(($block['fit'] ?? 'cover'), ['cover', 'contain', 'fill'], true) ? $block['fit'] : 'cover';
             break;
+        case 'gallery':
+            $images = [];
+            if (is_array($block['images'] ?? null)) {
+                // Bewusst begrenzt (30 Bilder), damit ein Ausreisser das slides.json nicht sprengt.
+                foreach (array_slice($block['images'], 0, 30) as $imageSrc) {
+                    $src = schauboard_sanitize_urlish($imageSrc);
+                    if ($src !== '') {
+                        $images[] = $src;
+                    }
+                }
+            }
+            $clean['images'] = $images;
+            $clean['interval'] = max(2, min(120, (int) ($block['interval'] ?? 6)));
+            $clean['fit'] = in_array(($block['fit'] ?? 'cover'), ['cover', 'contain', 'fill'], true) ? $block['fit'] : 'cover';
+            break;
+        case 'shape':
+            // Fuellfarbe steckt im generischen color-Feld (oben bereits bereinigt).
+            $clean['kind'] = in_array(($block['kind'] ?? 'rect'), ['rect', 'ellipse'], true) ? $block['kind'] : 'rect';
+            $clean['opacity'] = max(5, min(100, (int) ($block['opacity'] ?? 100)));
+            $clean['radius'] = max(0, min(400, (int) ($block['radius'] ?? 24)));
+            break;
         case 'weather':
             $clean['city'] = schauboard_sanitize_text($block['city'] ?? 'Zurich');
+            $clean['show_forecast'] = schauboard_sanitize_bool($block['show_forecast'] ?? false);
             break;
         case 'ticker':
             $clean['text'] = schauboard_sanitize_text($block['text'] ?? '');

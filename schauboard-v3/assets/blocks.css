@@ -21,12 +21,27 @@
 /* Bilder nicht nativ ziehbar machen -> sonst kapert der Browser-Drag das Verschieben im Editor */
 .sb-block img{-webkit-user-drag:none;user-select:none}
 
+/* Diashow (mehrere Bilder rotierend in einem Block) */
+.sb-gallery{position:relative;width:100%;height:100%;overflow:hidden}
+.sb-g-img{position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .9s ease}
+.sb-g-img.on{opacity:1}
+.sb-g-badge{position:absolute;right:8px;bottom:8px;padding:4px 10px;border-radius:999px;background:rgba(8,13,24,.78);color:#e7eefc;font-size:12px;font-weight:700;z-index:2}
+
+/* Form (Farbflaeche/Ellipse als Gestaltungselement) */
+.sb-shape{width:100%;height:100%}
+
 /* Weather */
 .sb-block.weather .sb-block-inner{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:.06em}
 .sb-w-emoji{line-height:1}
 .sb-w-city{font-weight:700}
 .sb-w-temp{font-weight:300;line-height:1.1}
 .sb-w-desc{opacity:.82}
+.sb-w-fc{display:flex;gap:1.4em;justify-content:center;margin-top:.5em}
+.sb-w-fc-day{display:flex;flex-direction:column;align-items:center;gap:.12em}
+.sb-w-fc-name{font-weight:700;opacity:.75;font-size:.82em}
+.sb-w-fc-emoji{font-size:1.35em;line-height:1.15}
+.sb-w-fc-temp{font-weight:600}
+.sb-w-fc-temp small{opacity:.6;font-weight:400;font-size:.8em}
 
 /* Ticker */
 .sb-block.ticker{display:flex;align-items:center;overflow:hidden}
