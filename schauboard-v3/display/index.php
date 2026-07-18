@@ -26,6 +26,7 @@ try {
 }
 $playlistId = is_array($display) ? schauboard_active_playlist_id($display, $schedules, $now) : $defaultPlaylistId;
 $playlistNotFound = false;
+$skippedByDate = 0;
 
 // Vorschau aus dem Editor: ?preview=1 zeigt genau eine uebergebene Folie
 // (aus der Session abgelegter Entwurf), ohne Rotation/Heartbeat.
@@ -55,9 +56,15 @@ if ($isPreview) {
     }
     foreach (($playlist['slide_ids'] ?? []) as $slideId) {
         $slide = schauboard_find_by_id($slides, (string) $slideId);
-        if ($slide !== null) {
-            $activeSlides[] = $slide;
+        if ($slide === null) {
+            continue;
         }
+        // Datums-Gueltigkeit: Folien ausserhalb ihres von-bis-Zeitraums ueberspringen.
+        if (!schauboard_slide_is_active($slide, $now)) {
+            $skippedByDate++;
+            continue;
+        }
+        $activeSlides[] = $slide;
     }
 }
 
@@ -75,13 +82,25 @@ $displayConfig = [
     'defaultDuration' => (int) ($settings['system']['default_slide_duration'] ?? 10),
     'weatherEndpoint' => ($settings['weather']['enabled'] ?? true) ? $rootBase . 'api/weather.php' : '',
     'weatherLocation' => $settings['weather']['location'] ?? 'Zurich',
+    'rssEndpoint' => $rootBase . 'api/rss.php',
     'heartbeatEndpoint' => $rootBase . 'api/heartbeat.php',
     'revisionEndpoint' => $rootBase . 'api/revision.php',
-    'revision' => is_array($display) ? schauboard_display_revision($display, $schedules, $now) : schauboard_revision(),
+    // Auch ohne konfiguriertes Display (leeres displays.json) DENSELBEN Pseudo-
+    // Display-Fallback wie api/revision.php nutzen - sonst weichen eingebettete
+    // und gepollte Revision voneinander ab und das Display laedt alle 5s neu.
+    'revision' => schauboard_display_revision(
+        is_array($display) ? $display : ['id' => $displayId, 'default_playlist_id' => $defaultPlaylistId],
+        $schedules,
+        $playlists,
+        $slides,
+        $now
+    ),
     'preview' => $isPreview,
     'emptyMessage' => $playlistNotFound
         ? 'Zugewiesene Playlist nicht gefunden – bitte im Admin pruefen.'
-        : 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.',
+        : ($skippedByDate > 0
+            ? 'Keine aktive Folie – alle Folien dieser Playlist sind zurzeit ausserhalb ihres Gueltigkeitszeitraums.'
+            : 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.'),
 ];
 
 $pageTitle = $maintenance ? 'Wartung' : ($display['name'] ?? 'Schauboard Display');

@@ -8,6 +8,7 @@ const TYPE_FIELDS = {
   gallery:   ['type','gallery','fit','advanced'],
   shape:     ['type','shape_kind','color','opacity','radius','advanced'],
   weather:   ['type','city','forecast','font_size','color','advanced'],
+  rss:       ['type','rss_url','rss_count','rss_time','rss_source','font_size','color','advanced'],
   ticker:    ['type','text','speed','bg','font_size','color','advanced'],
   table:     ['type','table','font_size','advanced'],
   webpage:   ['type','url','refresh_minutes','zoom','advanced'],
@@ -83,6 +84,36 @@ function initColorPicks() {
   });
 }
 
+/* Datums-Gueltigkeit einer Folie (Editor-Seite).
+   "Heute" kommt vom Server in der Settings-Zeitzone (APP.today) - dieselbe Basis
+   wie das Display; die Browser-Uhr ist nur Fallback. (Wert stammt vom Seiten-
+   Load; eine ueber Mitternacht offene Admin-Seite zeigt bis zum Reload den
+   alten Tag - bewusst in Kauf genommen.)
+   Rueckgabe: '' = keine Einschraenkung, 'on' = aktuell sichtbar, 'off' = zurzeit inaktiv. */
+function slideValidState(s) {
+  const from = s.valid_from || '', until = s.valid_until || '';
+  if (!from && !until) return '';
+  let today = APP.today;
+  if (!today) {
+    const d = new Date();
+    today = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  if (from && today < from) return 'off';
+  if (until && today > until) return 'off';
+  return 'on';
+}
+function fmtDate(iso) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : '';
+}
+function slideValidLabel(s) {
+  const from = s.valid_from || '', until = s.valid_until || '';
+  if (from && until) return fmtDate(from) + ' – ' + fmtDate(until);
+  if (from) return 'ab ' + fmtDate(from);
+  if (until) return 'bis ' + fmtDate(until);
+  return '';
+}
+
 function getSlide() { return state.slides.find(s => s.id === state.selectedSlideId) || null; }
 function getBlock() { const s = getSlide(); return s ? (s.blocks || []).find(b => b.id === state.selectedBlockId) || null : null; }
 
@@ -96,7 +127,7 @@ function ensureEditorSelection() {
 }
 
 function newSlide() {
-  return {id: uid('slide_'), name: 'Neue Folie', bg_color: '#1a1a2e', bg_image: '', duration: Number(APP.settings?.system?.default_slide_duration || 10), blocks: []};
+  return {id: uid('slide_'), name: 'Neue Folie', bg_color: '#1a1a2e', bg_image: '', duration: Number(APP.settings?.system?.default_slide_duration || 10), valid_from: '', valid_until: '', blocks: []};
 }
 function newBlock(type, pos) {
   const d = B.defaults(type);
@@ -171,7 +202,10 @@ function renderSlidesList() {
     btn.type = 'button';
     btn.draggable = true;
     btn.className = 'slide-item-btn' + (s.id === state.selectedSlideId ? ' active' : '');
-    btn.innerHTML = `<span class="si-grip" title="Ziehen zum Umsortieren">⠿</span><span class="si-info"><strong>${esc(s.name || 'Folie')}</strong><small>${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s</small></span>`;
+    // Datums-Gueltigkeit als Badge (rot, wenn die Folie zurzeit nicht angezeigt wird).
+    const vState = slideValidState(s);
+    const vBadge = vState ? `<span class="si-valid${vState === 'off' ? ' off' : ''}" title="Gültigkeitszeitraum${vState === 'off' ? ' – zurzeit nicht auf dem Display' : ''}">📅 ${esc(slideValidLabel(s))}${vState === 'off' ? ' · inaktiv' : ''}</span>` : '';
+    btn.innerHTML = `<span class="si-grip" title="Ziehen zum Umsortieren">⠿</span><span class="si-info"><strong>${esc(s.name || 'Folie')}</strong><small>${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s</small>${vBadge}</span>`;
     const del = document.createElement('span');
     del.className = 'si-del';
     del.textContent = '✕';
@@ -281,7 +315,7 @@ function renderCanvas() {
   });
 
   drawSnapGuides(canvas);
-  B.applyLive(canvas, {weatherEndpoint: WEATHER_ENDPOINT});
+  B.applyLive(canvas, {weatherEndpoint: WEATHER_ENDPOINT, rssEndpoint: '../api/rss.php'});
 }
 
 // Pointer-/Doppelklick-Handler. Wichtig: beim Klick NICHT das ganze Canvas neu
@@ -362,7 +396,7 @@ function drawSnapGuides(canvas) {
 
 function renderSlideFields() {
   const s = getSlide();
-  const map = {slideName: 'name', slideId: 'id', slideDuration: 'duration', slideBgColor: 'bg_color', slideBgImage: 'bg_image'};
+  const map = {slideName: 'name', slideId: 'id', slideDuration: 'duration', slideBgColor: 'bg_color', slideBgImage: 'bg_image', slideValidFrom: 'valid_from', slideValidUntil: 'valid_until'};
   Object.entries(map).forEach(([elId, field]) => {
     const el = document.getElementById(elId);
     if (!el) return;
@@ -406,6 +440,10 @@ function openModal(blockId) {
   document.getElementById('mCity').value = b.city || '';
   document.getElementById('mCity').placeholder = 'Standardort: ' + ((APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich');
   document.getElementById('mForecast').checked = !!b.show_forecast;
+  document.getElementById('mRssUrl').value = b.url || '';
+  document.getElementById('mRssCount').value = Number(b.count || 5);
+  document.getElementById('mRssTime').checked = b.show_time !== false;
+  document.getElementById('mRssSource').checked = !!b.show_source;
   document.getElementById('mShapeKind').value = b.kind || 'rect';
   document.getElementById('mOpacity').value = Number(b.opacity ?? 100);
   document.getElementById('mRadius').value = Number(b.radius ?? 24);
@@ -456,6 +494,12 @@ function applyModal() {
   if (t === 'video') { b.src = document.getElementById('mSrc').value.trim(); b.fit = document.getElementById('mFit').value; }
   if (t === 'clock') { b.clock_format = document.getElementById('mClockFormat').value; b.show_date = document.getElementById('mShowDate').checked; }
   if (t === 'weather') { b.city = document.getElementById('mCity').value.trim(); b.show_forecast = document.getElementById('mForecast').checked; } // leer = globalen Standardort nutzen
+  if (t === 'rss') {
+    b.url = document.getElementById('mRssUrl').value.trim();
+    b.count = clamp(Number(document.getElementById('mRssCount').value || 5), 1, 15);
+    b.show_time = document.getElementById('mRssTime').checked;
+    b.show_source = document.getElementById('mRssSource').checked;
+  }
   if (t === 'shape') { b.kind = document.getElementById('mShapeKind').value; b.opacity = clamp(Number(document.getElementById('mOpacity').value || 100), 5, 100); b.radius = clamp(Number(document.getElementById('mRadius').value || 0), 0, 400); }
   if (t === 'gallery') {
     b.images = document.getElementById('mGalleryList').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 30);
@@ -698,13 +742,21 @@ function initPlaylists() {
     if (!state.playlists.length) { hint.style.display = 'block'; hint.textContent = 'Noch keine Playlists – mit „+ Playlist" eine anlegen.'; }
     else hint.style.display = 'none';
     const slideName = id => { const s = state.slides.find(x => x.id === id); return s ? (s.name || s.id) : id; };
+    // Datums-Gueltigkeit sichtbar machen: 📅 = Zeitraum gesetzt, "inaktiv" = zurzeit nicht auf dem Display.
+    const validMark = id => {
+      const s = state.slides.find(x => x.id === id);
+      if (!s) return '';
+      const v = slideValidState(s);
+      if (!v) return '';
+      return `<span class="pl-valid${v === 'off' ? ' off' : ''}" title="Gültig: ${esc(slideValidLabel(s))}">📅</span>${v === 'off' ? '<span class="pl-inactive" title="Ausserhalb des Gültigkeitszeitraums – wird übersprungen">inaktiv</span>' : ''}`;
+    };
     state.playlists.forEach(pl => {
       // Nur noch existierende Folien behalten (geloeschte Folien aus der Reihenfolge werfen).
       pl.slide_ids = (Array.isArray(pl.slide_ids) ? pl.slide_ids : []).filter(id => state.slides.some(s => s.id === id));
       const card = document.createElement('article');
       card.className = 'item-card';
       const rows = pl.slide_ids.map((id, i) =>
-        `<div class="pl-slide" draggable="true" data-idx="${i}"><span class="si-grip" title="Ziehen zum Sortieren">⠿</span><span class="pl-slide-name"><span class="pl-num">${i + 1}.</span> ${esc(slideName(id))}</span><span class="pl-del" data-rm="${esc(id)}" title="Aus Playlist entfernen">✕</span></div>`
+        `<div class="pl-slide" draggable="true" data-idx="${i}"><span class="si-grip" title="Ziehen zum Sortieren">⠿</span><span class="pl-slide-name"><span class="pl-num">${i + 1}.</span> ${esc(slideName(id))}</span>${validMark(id)}<span class="pl-del" data-rm="${esc(id)}" title="Aus Playlist entfernen">✕</span></div>`
       ).join('') || '<div class="muted">Noch keine Folien – unten hinzufügen.</div>';
       const notIn = state.slides.filter(s => !pl.slide_ids.includes(s.id));
       let adder;
@@ -930,14 +982,14 @@ function initEditor() {
   renderEditor();
 
   // Folien-Felder
-  [['slideName', 'name'], ['slideId', 'id'], ['slideDuration', 'duration'], ['slideBgColor', 'bg_color'], ['slideBgImage', 'bg_image']].forEach(([elId, field]) => {
+  [['slideName', 'name'], ['slideId', 'id'], ['slideDuration', 'duration'], ['slideBgColor', 'bg_color'], ['slideBgImage', 'bg_image'], ['slideValidFrom', 'valid_from'], ['slideValidUntil', 'valid_until']].forEach(([elId, field]) => {
     const el = document.getElementById(elId);
     el.addEventListener('input', () => {
       const s = getSlide(); if (!s) return;
       s[field] = field === 'duration' ? Number(el.value || 10) : el.value;
       if (field === 'id') state.selectedSlideId = s.id;
       if (field === 'bg_color' || field === 'bg_image') renderCanvas();
-      if (field === 'name') renderSlidesList();
+      if (field === 'name' || field === 'valid_from' || field === 'valid_until') renderSlidesList();
       markDirty();
     });
   });
@@ -1114,6 +1166,7 @@ async function saveSlides() {
   const items = state.slides.map(s => ({
     id: s.id, name: s.name, duration: Number(s.duration || 10),
     bg_color: s.bg_color || '#1a1a2e', bg_image: s.bg_image || '',
+    valid_from: s.valid_from || '', valid_until: s.valid_until || '',
     blocks: Array.isArray(s.blocks) ? s.blocks : [],
   }));
   try { await postJson('../api/slides.php', {items}); clearDirty(); toast('Folien gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }

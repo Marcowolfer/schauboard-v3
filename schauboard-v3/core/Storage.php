@@ -289,11 +289,52 @@ function schauboard_active_playlist_id(array $display, array $schedules, DateTim
 }
 
 /**
- * Display-spezifische Revision: Datei-Signatur + aktuell aufgeloeste Playlist.
- * Aendert sich auch dann, wenn ein Zeitfenster die Playlist wechselt, ohne
- * dass eine Datei veraendert wurde -> der 5s-Poll erkennt den Wechsel.
+ * Datums-Gueltigkeit einer Folie: leeres valid_from/valid_until = unbegrenzt,
+ * gesetzte Werte sind inklusive (ISO-Datum, String-Vergleich reicht).
  */
-function schauboard_display_revision(array $display, array $schedules, DateTime $now): string
+function schauboard_slide_is_active(array $slide, DateTime $now): bool
 {
-    return schauboard_revision() . '-' . schauboard_active_playlist_id($display, $schedules, $now);
+    $today = $now->format('Y-m-d');
+    $from = (string) ($slide['valid_from'] ?? '');
+    $until = (string) ($slide['valid_until'] ?? '');
+
+    if ($from !== '' && $today < $from) {
+        return false;
+    }
+    if ($until !== '' && $today > $until) {
+        return false;
+    }
+
+    return true;
+}
+
+/**
+ * Display-spezifische Revision: Datei-Signatur + aktuell aufgeloeste Playlist
+ * + Menge der HEUTE gueltigen Folien dieser Playlist. Aendert sich auch dann,
+ * wenn ein Zeitfenster die Playlist wechselt oder eine Folie ihren
+ * Gueltigkeitszeitraum betritt/verlaesst (z. B. um Mitternacht), ohne dass
+ * eine Datei veraendert wurde -> der 5s-Poll erkennt den Wechsel.
+ */
+function schauboard_display_revision(array $display, array $schedules, array $playlists, array $slides, DateTime $now): string
+{
+    $playlistId = schauboard_active_playlist_id($display, $schedules, $now);
+    $playlist = schauboard_find_by_id($playlists, $playlistId);
+    // Gleicher Fallback wie display/index.php: fehlt die aufgeloeste Playlist
+    // (z. B. Zeitplan auf geloeschte Playlist), zeigt das Display die Standard-
+    // Playlist des Displays. Die Revision muss ueber DIESELBEN Folien rechnen,
+    // sonst verpasst der Poll deren Datumswechsel.
+    $defaultPlaylistId = (string) ($display['default_playlist_id'] ?? 'playlist_default');
+    if ($playlist === null && $playlistId !== $defaultPlaylistId) {
+        $playlist = schauboard_find_by_id($playlists, $defaultPlaylistId);
+    }
+
+    $activeIds = [];
+    foreach (($playlist['slide_ids'] ?? []) as $slideId) {
+        $slide = schauboard_find_by_id($slides, (string) $slideId);
+        if ($slide !== null && schauboard_slide_is_active($slide, $now)) {
+            $activeIds[] = (string) $slide['id'];
+        }
+    }
+
+    return schauboard_revision() . '-' . $playlistId . '-' . substr(md5(implode(',', $activeIds)), 0, 8);
 }

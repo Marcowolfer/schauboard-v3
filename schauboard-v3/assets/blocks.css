@@ -43,6 +43,16 @@
 .sb-w-fc-temp{font-weight:600}
 .sb-w-fc-temp small{opacity:.6;font-weight:400;font-size:.8em}
 
+/* RSS-Feed (Schlagzeilen-Liste) */
+.sb-block.rss .sb-block-inner{display:flex}
+.sb-rss{width:100%;display:flex;flex-direction:column;gap:.42em;justify-content:flex-start;overflow:hidden}
+.sb-rss-src{font-weight:800;letter-spacing:-.01em;opacity:.92;font-size:.78em;text-transform:uppercase;margin-bottom:.1em}
+.sb-rss-item{display:flex;align-items:baseline;gap:.6em;line-height:1.22;padding-left:.75em;position:relative}
+.sb-rss-item::before{content:"";position:absolute;left:0;top:.42em;width:.3em;height:.3em;border-radius:999px;background:currentColor;opacity:.55}
+.sb-rss-title{flex:1 1 auto;min-width:0;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.sb-rss-time{flex:0 0 auto;font-size:.62em;opacity:.62;font-weight:600;white-space:nowrap}
+.sb-rss-loading{opacity:.7;font-weight:600;font-size:.8em}
+
 /* Ticker */
 .sb-block.ticker{display:flex;align-items:center;overflow:hidden}
 .sb-ticker-track{white-space:nowrap;display:inline-block;will-change:transform;animation:sb-ticker linear infinite}

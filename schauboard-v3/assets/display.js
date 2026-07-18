@@ -43,19 +43,23 @@
     return layer;
   }
 
+  var current = 0;
+  var layers = [];
   if (!slides.length) {
     var empty = document.createElement('div');
     empty.className = 'sb-empty';
     empty.textContent = cfg.emptyMessage || 'Keine aktive Folie';
     stage.appendChild(empty);
-    return;
+    // WICHTIG: hier NICHT abbrechen. Heartbeat und Revision-Poll (unten) muessen
+    // weiterlaufen, damit sich das Display von selbst erholt, sobald wieder eine
+    // Folie aktiv wird (z. B. wenn eine Datums-Gueltigkeit beginnt oder der Admin
+    // Inhalte zuweist) - sonst bliebe es bis zum manuellen Neuladen leer.
+  } else {
+    layers = slides.map(buildSlide);
+    layers.forEach(function (layer) { stage.appendChild(layer); });
+    layers[0].style.opacity = '1';
+    Blocks.applyLive(stage, {weatherEndpoint: cfg.weatherEndpoint, rssEndpoint: cfg.rssEndpoint});
   }
-
-  var current = 0;
-  var layers = slides.map(buildSlide);
-  layers.forEach(function (layer) { stage.appendChild(layer); });
-  layers[0].style.opacity = '1';
-  Blocks.applyLive(stage, {weatherEndpoint: cfg.weatherEndpoint});
 
   function showSlide(next) {
     if (next === current || !layers[next]) return;
@@ -137,6 +141,7 @@
   window.addEventListener('resize', function () {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(function () {
+      if (!slides.length) return; // Leerzustand: nichts neu aufzubauen (Meldung bleibt stehen)
       var sc = stageScale();
       var visible = current;
       stage.innerHTML = '';
@@ -144,7 +149,7 @@
       layers.forEach(function (layer) { stage.appendChild(layer); });
       current = Math.min(visible, layers.length - 1);
       if (layers[current]) layers[current].style.opacity = '1';
-      Blocks.applyLive(stage, {weatherEndpoint: cfg.weatherEndpoint});
+      Blocks.applyLive(stage, {weatherEndpoint: cfg.weatherEndpoint, rssEndpoint: cfg.rssEndpoint});
     }, 200);
   });
 })();

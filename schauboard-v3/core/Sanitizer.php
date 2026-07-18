@@ -119,9 +119,22 @@ function schauboard_sanitize_table($value): array
     return $rows !== [] ? $rows : [['Spalte 1', 'Spalte 2'], ['Wert', 'Wert']];
 }
 
+/**
+ * ISO-Datum (YYYY-MM-DD) fuer die Folien-Gueltigkeit; leer = unbegrenzt.
+ */
+function schauboard_sanitize_date_string($value): string
+{
+    $value = schauboard_sanitize_text($value);
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $value, $m) && checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
+        return $value;
+    }
+
+    return '';
+}
+
 function schauboard_block_types(): array
 {
-    return ['text', 'heading', 'clock', 'image', 'gallery', 'shape', 'weather', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
+    return ['text', 'heading', 'clock', 'image', 'gallery', 'shape', 'weather', 'rss', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
 }
 
 function schauboard_sanitize_block(array $block): array
@@ -185,6 +198,12 @@ function schauboard_sanitize_block(array $block): array
             $clean['city'] = schauboard_sanitize_text($block['city'] ?? 'Zurich');
             $clean['show_forecast'] = schauboard_sanitize_bool($block['show_forecast'] ?? false);
             break;
+        case 'rss':
+            $clean['url'] = schauboard_sanitize_http_url($block['url'] ?? '');
+            $clean['count'] = max(1, min(15, (int) ($block['count'] ?? 5)));
+            $clean['show_time'] = schauboard_sanitize_bool($block['show_time'] ?? true);
+            $clean['show_source'] = schauboard_sanitize_bool($block['show_source'] ?? false);
+            break;
         case 'ticker':
             $clean['text'] = schauboard_sanitize_text($block['text'] ?? '');
             $clean['speed'] = max(10, min(200, (int) ($block['speed'] ?? 60)));
@@ -245,6 +264,8 @@ function schauboard_sanitize_slide(array $slide): array
         'bg_color' => schauboard_sanitize_color($slide['bg_color'] ?? '#1a1a2e'),
         'bg_image' => schauboard_sanitize_urlish($slide['bg_image'] ?? ''),
         'duration' => max(3, (int) ($slide['duration'] ?? 10)),
+        'valid_from' => schauboard_sanitize_date_string($slide['valid_from'] ?? ''),
+        'valid_until' => schauboard_sanitize_date_string($slide['valid_until'] ?? ''),
         'blocks' => $blocks,
     ];
 }

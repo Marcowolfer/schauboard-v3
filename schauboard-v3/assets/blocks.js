@@ -23,6 +23,7 @@ window.SchauboardBlocks = (function () {
     gallery:   {label: 'Diashow',  icon: '🎞️', w: 760, h: 480},
     shape:     {label: 'Form',     icon: '🟦', w: 600, h: 300},
     weather:   {label: 'Wetter',   icon: '⛅', w: 460, h: 360},
+    rss:       {label: 'RSS-Feed', icon: '📡', w: 760, h: 460},
     ticker:    {label: 'Laufband', icon: '📰', w: 1920, h: 110},
     table:     {label: 'Tabelle',  icon: '▦',  w: 760, h: 420},
     webpage:   {label: 'Webseite', icon: '🌐', w: 900, h: 600},
@@ -66,6 +67,7 @@ window.SchauboardBlocks = (function () {
     if (type === 'gallery') { base.images = []; base.interval = 6; base.fit = 'cover'; }
     if (type === 'shape') { base.kind = 'rect'; base.color = '#5f8cff'; base.opacity = 100; base.radius = 24; }
     if (type === 'weather') { base.city = ''; base.font_size = 40; base.show_forecast = false; } // leer = globalen Standardort aus den Einstellungen nutzen
+    if (type === 'rss') { base.url = ''; base.count = 5; base.show_time = true; base.show_source = false; base.font_size = 36; }
     if (type === 'ticker') { base.text = 'Willkommen bei Schauboard – hier läuft Ihr Lauftext.'; base.speed = 60; base.bg = '#313244'; base.font_size = 48; }
     if (type === 'table') {
       base.table_data = [['Produkt', 'Preis'], ['Kaffee', 'CHF 4.50'], ['Tee', 'CHF 3.80']];
@@ -228,6 +230,21 @@ window.SchauboardBlocks = (function () {
         '<div class="sb-w-temp" style="font-size:' + (wFont * 1.6) + 'px">-- °C</div>' +
         '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">Lädt…</div>' +
         (block.show_forecast ? '<div class="sb-w-fc" style="font-size:' + (wFont * 0.72) + 'px"></div>' : '');
+      return inner;
+    }
+
+    if (type === 'rss') {
+      if (!block.url) {
+        inner.innerHTML = '<div class="sb-block-empty">RSS-Feed – Feed-URL im Editor setzen</div>';
+        return inner;
+      }
+      inner.style.fontSize = (Math.max(10, num(block.font_size, 36)) * sc) + 'px';
+      inner.dataset.rss = '1';
+      inner.dataset.url = block.url;
+      inner.dataset.count = String(Math.max(1, Math.min(15, num(block.count, 5))));
+      inner.dataset.showTime = block.show_time === false ? '' : '1';
+      inner.dataset.showSource = block.show_source ? '1' : '';
+      inner.innerHTML = '<div class="sb-rss"><div class="sb-rss-loading">📡 Lädt…</div></div>';
       return inner;
     }
 
@@ -400,6 +417,11 @@ window.SchauboardBlocks = (function () {
   var globalLiveStarted = false;
   var weatherEndpointSaved = null;   // fuer den periodischen Refresh gemerkt
   var weatherRefreshStarted = false; // genau ein Intervall, kein Stacking
+  var rssCache = new Map();     // url -> {at, data, err}  (gleiches Muster wie weatherCache)
+  var rssPending = new Set();
+  var RSS_TTL = 9 * 60 * 1000;
+  var rssEndpointSaved = null;
+  var rssRefreshStarted = false;
 
   function pad(n) { return (n < 10 ? '0' : '') + n; }
 
@@ -507,6 +529,77 @@ window.SchauboardBlocks = (function () {
     });
   }
 
+  // Relative Zeitangabe fuer Feed-Meldungen (deutsch, kurz).
+  function rssAge(ts) {
+    if (!ts) return '';
+    var mins = (Date.now() / 1000 - ts) / 60;
+    if (mins < 1) return 'gerade eben';
+    if (mins < 60) return 'vor ' + Math.round(mins) + ' Min.';
+    if (mins < 48 * 60) return 'vor ' + Math.round(mins / 60) + ' Std.';
+    var d = new Date(ts * 1000);
+    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.';
+  }
+
+  function paintRss(el, data) {
+    var box = el.querySelector('.sb-rss');
+    if (!box) return;
+    if (!data || data.error || !Array.isArray(data.items) || !data.items.length) {
+      // Sichtbarer Offline-Zustand statt dauerhaftem "Laedt…" (wie beim Wetter).
+      box.innerHTML = '<div class="sb-rss-loading">📡 Feed offline</div>';
+      return;
+    }
+    var count = Math.max(1, Math.min(15, Number(el.dataset.count) || 5));
+    var html = '';
+    if (el.dataset.showSource && data.source) {
+      html += '<div class="sb-rss-src">' + escapeHtml(data.source) + '</div>';
+    }
+    data.items.slice(0, count).forEach(function (item) {
+      html += '<div class="sb-rss-item"><span class="sb-rss-title">' + escapeHtml(item.title || '') + '</span>' +
+        (el.dataset.showTime ? '<span class="sb-rss-time">' + escapeHtml(rssAge(item.ts)) + '</span>' : '') +
+        '</div>';
+    });
+    box.innerHTML = html;
+  }
+
+  function loadRss(root, endpoint) {
+    if (!endpoint) return;
+    root.querySelectorAll('[data-rss]').forEach(function (el) {
+      var url = el.dataset.url;
+      if (!url) return;
+      var cached = rssCache.get(url);
+      if (cached) paintRss(el, cached.data);
+      // Gueltige Daten 9 Min cachen; Fehler nur 1 Min, damit es nach Netz-Rueckkehr schnell heilt.
+      if (cached && !cached.err && (Date.now() - cached.at) < RSS_TTL) return;
+      if (cached && cached.err && (Date.now() - cached.at) < 60000) return;
+      if (rssPending.has(url)) return;
+      rssPending.add(url);
+      fetch(endpoint + '?url=' + encodeURIComponent(url))
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          rssCache.set(url, {at: Date.now(), data: data, err: !data || !!data.error});
+          document.querySelectorAll('[data-rss]').forEach(function (node) {
+            if (node.dataset.url === url) paintRss(node, data);
+          });
+        })
+        .catch(function () {
+          rssCache.set(url, {at: Date.now(), data: {error: true}, err: true});
+          document.querySelectorAll('[data-rss]').forEach(function (node) {
+            if (node.dataset.url === url) paintRss(node, {error: true});
+          });
+        })
+        .finally(function () { rssPending.delete(url); });
+    });
+  }
+
+  // Feeds periodisch aktualisieren (alle 15 Min) - wie beim Wetter genau ein Intervall.
+  function startRssRefresh() {
+    if (rssRefreshStarted || !rssEndpointSaved) return;
+    rssRefreshStarted = true;
+    setInterval(function () {
+      if (rssEndpointSaved) loadRss(document, rssEndpointSaved);
+    }, 15 * 60 * 1000);
+  }
+
   // Diashow: Bilder im Block rotieren (Ueberblendung via CSS-Klasse .on).
   // Gleiches Muster wie webpageTimers: alte Intervalle raeumen, neu aufsetzen –
   // applyLive darf beliebig oft laufen (Display-Resize), ohne Timer zu stapeln.
@@ -571,6 +664,11 @@ window.SchauboardBlocks = (function () {
       weatherEndpointSaved = opts.weatherEndpoint;
       loadWeather(root, opts.weatherEndpoint);
       startWeatherRefresh();
+    }
+    if (opts.rssEndpoint) {
+      rssEndpointSaved = opts.rssEndpoint;
+      loadRss(root, opts.rssEndpoint);
+      startRssRefresh();
     }
     setupWebpageRefresh(root);
     setupTickers(root);

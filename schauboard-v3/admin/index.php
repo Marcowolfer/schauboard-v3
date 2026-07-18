@@ -79,8 +79,18 @@ $sectionHints = [
     'settings' => 'Globale Einstellungen, Branding und Wartungsmodus.',
 ];
 
+// "Heute" in der Settings-Zeitzone: massgeblich fuer die Gueltigkeits-Badges im
+// Editor, damit sie zum Display-Verhalten passen (das rechnet mit derselben TZ,
+// nicht mit der Browser-Uhr des Admin-Rechners).
+try {
+    $adminNow = new DateTime('now', new DateTimeZone($settings['system']['timezone'] ?? 'Europe/Zurich'));
+} catch (Exception $e) {
+    $adminNow = new DateTime('now');
+}
+
 $jsState = [
     'settings' => $settings,
+    'today' => $adminNow->format('Y-m-d'),
     'slides' => $slides,
     'playlists' => $playlists,
     'displays' => $displays,
@@ -191,6 +201,12 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 /* Loeschen-X absolut oben rechts -> konkurriert nie um die (schmale) Spaltenbreite */
 .slide-item-btn .si-del{position:absolute;top:0;right:0;cursor:pointer;opacity:.5;padding:7px 8px;line-height:1}
 .slide-item-btn .si-del:hover{opacity:1}
+/* Datums-Gueltigkeit: Badge in der Folienliste (gruen = aktuell sichtbar, rot = zurzeit inaktiv) */
+.si-valid{display:block;margin-top:3px;font-size:10px;font-weight:700;color:var(--accent2)}
+.si-valid.off{color:var(--danger)}
+.pl-valid{flex:0 0 auto;font-size:12px;opacity:.8;cursor:help}
+.pl-valid.off{filter:grayscale(1);opacity:.55}
+.pl-slide .pl-inactive{flex:0 0 auto;font-size:10px;font-weight:700;color:var(--danger);border:1px solid rgba(255,142,161,.35);border-radius:999px;padding:1px 7px}
 .block-pill{padding:0;overflow:hidden}
 .block-pill-info{flex:1;min-width:0;background:transparent;border:none;color:var(--text);text-align:left;cursor:pointer;padding:9px 11px}
 .layer-ctrl{display:flex;flex-direction:column;flex:0 0 auto;border-left:1px solid rgba(255,255,255,.08)}
@@ -417,7 +433,10 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
                     <label class="field">ID<input type="text" id="slideId"></label>
                     <label class="field">Hintergrundfarbe<span class="color-row"><input type="color" id="slideBgColorPick" aria-label="Farbe wählen"><input type="text" id="slideBgColor" placeholder="#1a1a2e"></span></label>
                     <label class="field">Hintergrundbild (URL)<input type="text" id="slideBgImage" placeholder="optional"></label>
+                    <label class="field">Gültig von<input type="date" id="slideValidFrom" title="Leer = ab sofort"></label>
+                    <label class="field">Gültig bis<input type="date" id="slideValidUntil" title="Leer = unbegrenzt"></label>
                   </div>
+                  <div class="muted" style="margin-top:8px;">Gültigkeit: Ausserhalb des Zeitraums überspringt das Display die Folie automatisch (z. B. für Ferien oder Aktionen). Leer = immer sichtbar.</div>
                 </details>
               </div>
             </section>
@@ -505,6 +524,10 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       </div>
       <label class="field" data-f="city">Ort<input type="text" id="mCity"></label>
       <label class="checkbox" data-f="forecast"><input type="checkbox" id="mForecast"> 3-Tage-Vorschau anzeigen</label>
+      <label class="field" data-f="rss_url">Feed-URL (RSS oder Atom)<input type="text" id="mRssUrl" placeholder="https://…/feed.xml"></label>
+      <label class="field" data-f="rss_count">Anzahl Meldungen (1–15)<input type="number" id="mRssCount" min="1" max="15"></label>
+      <label class="checkbox" data-f="rss_time"><input type="checkbox" id="mRssTime"> Zeit anzeigen (z. B. «vor 2 Std.»)</label>
+      <label class="checkbox" data-f="rss_source"><input type="checkbox" id="mRssSource"> Feed-Titel als Überschrift</label>
       <label class="field" data-f="clock_format">Format
         <select id="mClockFormat"><option value="HH:MM">HH:MM</option><option value="HH:MM:SS">HH:MM:SS</option></select>
       </label>
