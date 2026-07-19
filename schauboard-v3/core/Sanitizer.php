@@ -298,6 +298,45 @@ function schauboard_sanitize_display(array $display): array
     ];
 }
 
+/**
+ * Bereinigt eine komplette Einstellungs-Struktur (fuer den Backup-Import).
+ * Basis sind die Defaults; nur bekannte Felder werden aus der Eingabe uebernommen,
+ * damit ein manipuliertes Backup keine Fremdstruktur/kein Script einschleust.
+ */
+function schauboard_sanitize_settings($value): array
+{
+    $d = schauboard_settings_defaults();
+    $in = is_array($value) ? $value : [];
+    $sys = is_array($in['system'] ?? null) ? $in['system'] : [];
+    $wx = is_array($in['weather'] ?? null) ? $in['weather'] : [];
+    $mnt = is_array($in['maintenance'] ?? null) ? $in['maintenance'] : [];
+    $brd = is_array($in['branding'] ?? null) ? $in['branding'] : [];
+
+    $nonEmpty = static fn($v, $fallback) => ($t = schauboard_sanitize_text($v)) !== '' ? $t : $fallback;
+
+    return [
+        'system' => [
+            'timezone' => $nonEmpty($sys['timezone'] ?? '', $d['system']['timezone']),
+            'language' => $nonEmpty($sys['language'] ?? '', $d['system']['language']),
+            'default_slide_duration' => max(3, (int) ($sys['default_slide_duration'] ?? $d['system']['default_slide_duration'])),
+            'default_transition' => $nonEmpty($sys['default_transition'] ?? '', $d['system']['default_transition']),
+            'offline_timeout_minutes' => max(1, min(120, (int) ($sys['offline_timeout_minutes'] ?? $d['system']['offline_timeout_minutes']))),
+        ],
+        'weather' => [
+            'enabled' => schauboard_sanitize_bool($wx['enabled'] ?? $d['weather']['enabled']),
+            'location' => $nonEmpty($wx['location'] ?? '', $d['weather']['location']),
+            'provider' => $nonEmpty($wx['provider'] ?? '', $d['weather']['provider']),
+        ],
+        'maintenance' => [
+            'enabled' => schauboard_sanitize_bool($mnt['enabled'] ?? false),
+            'message' => schauboard_sanitize_text($mnt['message'] ?? ''),
+        ],
+        'branding' => [
+            'name' => $nonEmpty($brd['name'] ?? '', $d['branding']['name']),
+        ],
+    ];
+}
+
 function schauboard_sanitize_schedule(array $schedule): array
 {
     return [

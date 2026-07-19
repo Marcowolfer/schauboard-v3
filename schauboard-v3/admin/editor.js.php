@@ -839,7 +839,12 @@ function initDisplays() {
       card.querySelector('[data-del]').addEventListener('click', () => { state.displays = state.displays.filter(x => x !== d); markDirty(); render(); });
       card.querySelector('[data-name]').addEventListener('input', e => { d.name = e.target.value; markDirty(); });
       card.querySelector('[data-playlist]').addEventListener('change', e => { d.default_playlist_id = e.target.value; markDirty(); });
-      card.querySelector('[data-id]').addEventListener('input', e => { d.id = slug(e.target.value); markDirty(); render(); });
+      // Beim Tippen NUR den Wert aktualisieren (kein render() -> sonst wird die
+      // Karte neu gebaut und das Eingabefeld verliert nach jedem Zeichen den Fokus).
+      // Erst beim Verlassen des Feldes neu rendern, damit URL/QR/Auswahllisten stimmen.
+      const idInput = card.querySelector('[data-id]');
+      idInput.addEventListener('input', e => { d.id = slug(e.target.value); markDirty(); });
+      idInput.addEventListener('change', () => render());
       card.querySelector('[data-token]').addEventListener('input', e => { d.token = e.target.value; markDirty(); });
       card.querySelector('[data-copy]').addEventListener('click', async () => {
         const ok = await copyText(url);

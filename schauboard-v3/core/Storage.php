@@ -240,10 +240,15 @@ function schauboard_find_by_id(array $items, string $id): ?array
  */
 function schauboard_revision(): string
 {
-    $parts = [];
+    // App-Version einbeziehen: nach einem In-App-Update aendern sich nur die
+    // Programmdateien, nicht die data-JSONs -> ohne die Version wuerde die Revision
+    // gleich bleiben und laufende Displays den neuen Code nie laden.
+    // Zusaetzlich filesize je Datei gegen die 1-Sekunden-Aufloesung von filemtime
+    // (zwei Saves in derselben Sekunde saehen sonst identisch aus).
+    $parts = [(string) (schauboard_version()['current'] ?? '0')];
     foreach (['slides', 'playlists', 'displays', 'schedules', 'settings'] as $name) {
         $path = schauboard_json_path($name);
-        $parts[] = is_file($path) ? (string) filemtime($path) : '0';
+        $parts[] = is_file($path) ? filemtime($path) . ':' . filesize($path) : '0';
     }
 
     return substr(md5(implode('-', $parts)), 0, 12);

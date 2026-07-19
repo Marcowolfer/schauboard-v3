@@ -133,6 +133,37 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:
       <p><?= htmlspecialchars($maintenanceMessage !== '' ? $maintenanceMessage : 'Dieses Display ist gerade im Wartungsmodus.') ?></p>
     </div>
   </div>
+  <script>
+  // WICHTIG: Auch die Wartungsseite muss weiter Heartbeats senden UND die Revision
+  // pollen. Sonst haengt jedes Display nach dem Abschalten der Wartung dauerhaft auf
+  // dieser Seite (niemand laedt neu) und gilt im Admin faelschlich als offline.
+  (function () {
+    var cfg = <?= json_encode([
+        'displayId' => $displayId,
+        'heartbeatEndpoint' => $displayConfig['heartbeatEndpoint'],
+        'revisionEndpoint' => $displayConfig['revisionEndpoint'],
+        'revision' => $displayConfig['revision'],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
+    if (cfg.heartbeatEndpoint && cfg.displayId) {
+      var beat = function () { fetch(cfg.heartbeatEndpoint + '?display=' + encodeURIComponent(cfg.displayId), {cache: 'no-store'}).catch(function () {}); };
+      beat();
+      setInterval(beat, 60 * 1000);
+    }
+    if (cfg.revisionEndpoint) {
+      var lastRev = cfg.revision || '';
+      var revUrl = cfg.revisionEndpoint + '?display=' + encodeURIComponent(cfg.displayId || 'default');
+      setInterval(function () {
+        fetch(revUrl + '&_=' + Date.now(), {cache: 'no-store'})
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            if (data && data.revision && lastRev && data.revision !== lastRev) { location.reload(); }
+            if (data && data.revision) lastRev = data.revision;
+          })
+          .catch(function () {});
+      }, 5000);
+    }
+  })();
+  </script>
 <?php else: ?>
   <div class="display-shell">
     <main id="sbStage"></main>

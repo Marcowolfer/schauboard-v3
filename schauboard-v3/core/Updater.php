@@ -241,8 +241,14 @@ function schauboard_update_install_files(string $srcRoot, string $appRoot, strin
     };
 
     foreach ($files as $rel) {
-        if ($rel === 'config.local.php') {
-            continue; // echte Konfiguration nie ueberschreiben
+        // Nutzerdaten & echte Konfiguration NIE ueberschreiben - auch nicht, wenn
+        // sie versehentlich ins Release-Paket geraten (Live-Daten liegen nur auf
+        // dem Server; im Paket sind data/*.json gar nicht enthalten, aber der
+        // Filter schuetzt zusaetzlich gegen einen Fehler beim ZIP-Bauen).
+        if ($rel === 'config.local.php'
+            || strncmp($rel, 'data/', 5) === 0
+            || strncmp($rel, 'uploads/', 8) === 0) {
+            continue;
         }
         $src = $srcRoot . '/' . $rel;
         $dst = $appRoot . '/' . $rel;
@@ -266,6 +272,16 @@ function schauboard_update_install_files(string $srcRoot, string $appRoot, strin
 
         if (!@copy($src, $dst)) {
             $error = 'Kopieren fehlgeschlagen: ' . $rel;
+            // Die gerade (evtl. schon auf 0 Byte trunkierte) Zieldatei steht noch
+            // NICHT in $done -> der $rollback() unten wuerde genau sie ueberspringen
+            // und eine kaputte PHP-Datei stehen lassen (Fatal auf jeder Seite).
+            // Deshalb hier zuerst selbst zuruecksetzen: existierte sie, aus dem
+            // intakten Backup; war sie neu, das Fragment entfernen.
+            if ($existed) {
+                @copy($backupRoot . '/' . $rel, $dst);
+            } else {
+                @unlink($dst);
+            }
             $rollback();
             return false;
         }

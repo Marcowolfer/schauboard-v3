@@ -48,12 +48,30 @@ if (!$found) {
     exit;
 }
 
+// Backup-Inhalte durch DIESELBEN Sanitizer schicken wie die Einzel-Endpunkte -
+// sonst waere der Import der einzige Schreibpfad, der ungeprueft nach data/*.json
+// schreibt (ein manipuliertes/kaputtes Backup koennte so Display + Admin per
+// Fatal lahmlegen oder persistentes Script auf allen Displays ausliefern).
+$listSanitizer = static fn(callable $fn) => static fn($items) => is_array($items)
+    ? array_values(array_map($fn, array_filter($items, 'is_array')))
+    : [];
+$sanitizers = [
+    'slides' => $listSanitizer('schauboard_sanitize_slide'),
+    'playlists' => $listSanitizer('schauboard_sanitize_playlist'),
+    'displays' => $listSanitizer('schauboard_sanitize_display'),
+    'schedules' => $listSanitizer('schauboard_sanitize_schedule'),
+    // Vorlagen werden vom Display NIE gerendert; nur grob als Objekt-Liste absichern.
+    'templates' => static fn($items) => is_array($items) ? array_values(array_filter($items, 'is_array')) : [],
+    'settings' => 'schauboard_sanitize_settings',
+];
+
 $written = [];
 foreach ($datasets as $name) {
     if (!isset($data[$name]) || !is_array($data[$name])) {
         continue;
     }
-    if (!schauboard_write_dataset($name, $data[$name])) {
+    $clean = $sanitizers[$name]($data[$name]);
+    if (!schauboard_write_dataset($name, $clean)) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'error' => 'Schreibfehler bei "' . $name . '" (Teil-Import: ' . implode(', ', $written) . ').']);
         exit;
