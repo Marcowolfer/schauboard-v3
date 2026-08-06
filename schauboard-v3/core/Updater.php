@@ -167,11 +167,11 @@ function schauboard_update_can_auto(): array
 {
     $reasons = [];
     if (!class_exists('ZipArchive')) {
-        $reasons[] = 'PHP-ZipArchive fehlt';
+        $reasons[] = t('update.reason.no_ziparchive', 'PHP-ZipArchive fehlt');
     }
     $root = schauboard_app_root();
     if (!is_writable($root) || !is_writable($root . '/core') || !is_writable($root . '/admin')) {
-        $reasons[] = 'Programmdateien sind nicht beschreibbar';
+        $reasons[] = t('update.reason.not_writable', 'Programmdateien sind nicht beschreibbar');
     }
     return ['ok' => $reasons === [], 'reasons' => $reasons];
 }
@@ -223,7 +223,7 @@ function schauboard_update_install_files(string $srcRoot, string $appRoot, strin
     $files = schauboard_update_list_files($srcRoot);
     schauboard_update_rrmdir($backupRoot);
     if (!@mkdir($backupRoot, 0775, true) && !is_dir($backupRoot)) {
-        $error = 'Backup-Ordner nicht anlegbar';
+        $error = t('update.error.backup_dir', 'Backup-Ordner nicht anlegbar');
         return false;
     }
 
@@ -257,21 +257,21 @@ function schauboard_update_install_files(string $srcRoot, string $appRoot, strin
         if ($existed) {
             $bak = $backupRoot . '/' . $rel;
             if ((!is_dir(dirname($bak)) && !@mkdir(dirname($bak), 0775, true)) || !@copy($dst, $bak)) {
-                $error = 'Backup fehlgeschlagen: ' . $rel;
+                $error = t('update.error.backup_failed', 'Backup fehlgeschlagen: {file}', ['file' => $rel]);
                 $rollback();
                 return false;
             }
         } else {
             $d = dirname($dst);
             if (!is_dir($d) && !@mkdir($d, 0775, true)) {
-                $error = 'Ordner nicht anlegbar: ' . $rel;
+                $error = t('update.error.dir_failed', 'Ordner nicht anlegbar: {file}', ['file' => $rel]);
                 $rollback();
                 return false;
             }
         }
 
         if (!@copy($src, $dst)) {
-            $error = 'Kopieren fehlgeschlagen: ' . $rel;
+            $error = t('update.error.copy_failed', 'Kopieren fehlgeschlagen: {file}', ['file' => $rel]);
             // Die gerade (evtl. schon auf 0 Byte trunkierte) Zieldatei steht noch
             // NICHT in $done -> der $rollback() unten wuerde genau sie ueberspringen
             // und eine kaputte PHP-Datei stehen lassen (Fatal auf jeder Seite).
@@ -296,12 +296,12 @@ function schauboard_apply_update(): array
 {
     $can = schauboard_update_can_auto();
     if (!$can['ok']) {
-        return ['ok' => false, 'error' => 'Automatisches Update nicht möglich: ' . implode(', ', $can['reasons']) . '. Bitte manuell aktualisieren.'];
+        return ['ok' => false, 'error' => t('update.error.auto_not_possible', 'Automatisches Update nicht möglich: {reasons}. Bitte manuell aktualisieren.', ['reasons' => implode(', ', $can['reasons'])])];
     }
 
     $info = schauboard_check_update(true); // frisches Manifest
     if (empty($info['update_available'])) {
-        return ['ok' => false, 'error' => 'Kein Update verfügbar.'];
+        return ['ok' => false, 'error' => t('update.error.no_update', 'Kein Update verfügbar.')];
     }
     $current = (string) (schauboard_version()['current'] ?? '0.0.0');
 
@@ -309,7 +309,7 @@ function schauboard_apply_update(): array
     // (kein Redirect auf fremde Domains -> echtes Host-Pinning).
     $zipUrl = schauboard_update_safe_url($info['zip'] ?? '');
     if ($zipUrl === '') {
-        return ['ok' => false, 'error' => 'Kein direkter Download (zip) auf ' . schauboard_update_allowed_host() . ' im Manifest – bitte manuell aktualisieren.'];
+        return ['ok' => false, 'error' => t('update.error.no_zip', 'Kein direkter Download (zip) auf {host} im Manifest – bitte manuell aktualisieren.', ['host' => schauboard_update_allowed_host()])];
     }
     $expectSha = strtolower((string) ($info['sha256'] ?? ''));
 
@@ -317,7 +317,7 @@ function schauboard_apply_update(): array
     $work = $dataDir . '/update_tmp';
     schauboard_update_rrmdir($work);
     if (!@mkdir($work, 0775, true) && !is_dir($work)) {
-        return ['ok' => false, 'error' => 'Arbeitsordner nicht anlegbar (ist data/ beschreibbar?).'];
+        return ['ok' => false, 'error' => t('update.error.workdir', 'Arbeitsordner nicht anlegbar (ist data/ beschreibbar?).')];
     }
 
     // 1) Herunterladen – bewusst OHNE Redirects, damit der Download den
@@ -330,35 +330,35 @@ function schauboard_apply_update(): array
     $bytes = @file_get_contents($zipUrl, false, $ctx);
     if ($bytes === false || strlen($bytes) < 1000) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'Download fehlgeschlagen.'];
+        return ['ok' => false, 'error' => t('update.error.download', 'Download fehlgeschlagen.')];
     }
 
     // 2) Integritaet pruefen (sha256 aus dem Manifest, kommt per https von schauboard.ch)
     if ($expectSha !== '') {
         if (!hash_equals($expectSha, hash('sha256', $bytes))) {
             schauboard_update_rrmdir($work);
-            return ['ok' => false, 'error' => 'Prüfsumme stimmt nicht (Download beschädigt/manipuliert) – abgebrochen.'];
+            return ['ok' => false, 'error' => t('update.error.checksum', 'Prüfsumme stimmt nicht (Download beschädigt/manipuliert) – abgebrochen.')];
         }
     }
 
     $zipPath = $work . '/update.zip';
     if (@file_put_contents($zipPath, $bytes) === false) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'ZIP konnte nicht gespeichert werden.'];
+        return ['ok' => false, 'error' => t('update.error.zip_save', 'ZIP konnte nicht gespeichert werden.')];
     }
 
     // 3) Entpacken
     $zip = new ZipArchive();
     if ($zip->open($zipPath) !== true) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'ZIP konnte nicht geöffnet werden.'];
+        return ['ok' => false, 'error' => t('update.error.zip_open', 'ZIP konnte nicht geöffnet werden.')];
     }
     $extractDir = $work . '/extracted';
     @mkdir($extractDir, 0775, true);
     if (!$zip->extractTo($extractDir)) {
         $zip->close();
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'ZIP konnte nicht entpackt werden.'];
+        return ['ok' => false, 'error' => t('update.error.zip_extract', 'ZIP konnte nicht entpackt werden.')];
     }
     $zip->close();
 
@@ -366,13 +366,13 @@ function schauboard_apply_update(): array
     $srcRoot = $extractDir . '/schauboard-v3';
     if (!is_file($srcRoot . '/version.php') || !is_dir($srcRoot . '/core') || !is_file($srcRoot . '/index.php')) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'Paketstruktur unerwartet – abgebrochen.'];
+        return ['ok' => false, 'error' => t('update.error.structure', 'Paketstruktur unerwartet – abgebrochen.')];
     }
     $newMeta = @include $srcRoot . '/version.php';
     $newVer = is_array($newMeta) ? (string) ($newMeta['current'] ?? '') : '';
     if ($newVer === '' || version_compare($newVer, $current, '<=')) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'Paket-Version (' . $newVer . ') ist nicht neuer als die installierte (' . $current . ').'];
+        return ['ok' => false, 'error' => t('update.error.not_newer', 'Paket-Version ({new}) ist nicht neuer als die installierte ({current}).', ['new' => $newVer, 'current' => $current])];
     }
 
     // 5) Dateien installieren (Backup + Auto-Rollback)
@@ -380,7 +380,7 @@ function schauboard_apply_update(): array
     $err = null;
     if (!schauboard_update_install_files($srcRoot, schauboard_app_root(), $backupRoot, $err)) {
         schauboard_update_rrmdir($work);
-        return ['ok' => false, 'error' => 'Installation fehlgeschlagen (zurückgerollt): ' . ($err ?? 'unbekannt')];
+        return ['ok' => false, 'error' => t('update.error.install_failed', 'Installation fehlgeschlagen (zurückgerollt): {reason}', ['reason' => ($err ?? t('update.error.unknown', 'unbekannt'))])];
     }
 
     // 6) Aufraeumen + Opcache leeren, damit der neue Code sofort greift

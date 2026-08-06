@@ -13,21 +13,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['ok' => false, 'error' => 'Methode nicht erlaubt.']);
+    echo json_encode(['ok' => false, 'error' => t('api.method_not_allowed', 'Methode nicht erlaubt.')]);
     exit;
 }
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($payload) || !isset($payload['items']) || !is_array($payload['items'])) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Ungueltige Daten.']);
+    echo json_encode(['ok' => false, 'error' => t('api.invalid_data', 'Ungueltige Daten.')]);
     exit;
 }
 
 $items = array_values($payload['items']);
 if (!schauboard_write_dataset('templates', $items)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Speichern fehlgeschlagen (Schreibfehler auf data/).']);
+    echo json_encode(['ok' => false, 'error' => t('api.save_failed', 'Speichern fehlgeschlagen (Schreibfehler auf data/).')]);
     exit;
 }
 

@@ -48,7 +48,7 @@
   if (!slides.length) {
     var empty = document.createElement('div');
     empty.className = 'sb-empty';
-    empty.textContent = cfg.emptyMessage || 'Keine aktive Folie';
+    empty.textContent = cfg.emptyMessage || window.sbT('display.empty.fallback', 'Keine aktive Folie');
     stage.appendChild(empty);
     // WICHTIG: hier NICHT abbrechen. Heartbeat und Revision-Poll (unten) muessen
     // weiterlaufen, damit sich das Display von selbst erholt, sobald wieder eine

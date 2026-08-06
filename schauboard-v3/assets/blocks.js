@@ -8,29 +8,48 @@
  * Koordinatensystem: 1920x1080. Bloecke speichern x/y/w/h in diesen Einheiten
  * und werden beim Rendern in Prozent der Buehne umgerechnet.
  */
+/*
+ * Uebersetzung im Browser - gleiches Prinzip wie t() in PHP: der deutsche Text
+ * steht als Rueckfall direkt am Aufruf, uebersetzt wird nur "nach oben".
+ *   sbT('editor.save', 'Speichern')
+ * Fehlt das Woerterbuch (window.SB_LANG) oder der Schluessel, bleibt es beim
+ * deutschen Text - die Oberflaeche kann dadurch nie leer werden.
+ */
+window.sbT = function (key, fallback, vars) {
+  var dict = window.SB_LANG;
+  var text = (dict && typeof dict[key] === 'string' && dict[key] !== '') ? dict[key] : fallback;
+  if (vars) {
+    Object.keys(vars).forEach(function (name) {
+      text = text.split('{' + name + '}').join(String(vars[name]));
+    });
+  }
+  return text;
+};
+
 window.SchauboardBlocks = (function () {
   'use strict';
 
+  var t = window.sbT;
   var STAGE_W = 1920;
   var STAGE_H = 1080;
 
   // Metadaten je Blocktyp: Label, Icon, Standardgroesse, Standardfelder.
   var TYPES = {
-    text:      {label: 'Text',     icon: '📝', w: 460, h: 160},
-    heading:   {label: 'Titel',    icon: '🔠', w: 900, h: 180},
-    clock:     {label: 'Uhr',      icon: '🕒', w: 360, h: 150},
-    image:     {label: 'Bild',     icon: '🖼️', w: 520, h: 360},
-    gallery:   {label: 'Diashow',  icon: '🎞️', w: 760, h: 480},
-    shape:     {label: 'Form',     icon: '🟦', w: 600, h: 300},
-    weather:   {label: 'Wetter',   icon: '⛅', w: 460, h: 360},
-    rss:       {label: 'RSS-Feed', icon: '📡', w: 760, h: 460},
-    ticker:    {label: 'Laufband', icon: '📰', w: 1920, h: 110},
-    table:     {label: 'Tabelle',  icon: '▦',  w: 760, h: 420},
-    webpage:   {label: 'Webseite', icon: '🌐', w: 900, h: 600},
-    qrcode:    {label: 'QR-Code',  icon: '🔳', w: 320, h: 380},
-    countdown: {label: 'Countdown', icon: '⏳', w: 560, h: 240},
-    animation: {label: 'Animation', icon: '✨', w: 900, h: 600},
-    video:     {label: 'Video',     icon: '🎬', w: 960, h: 540}
+    text:      {label: t('block.type.text', 'Text'),         icon: '📝', w: 460, h: 160},
+    heading:   {label: t('block.type.heading', 'Titel'),     icon: '🔠', w: 900, h: 180},
+    clock:     {label: t('block.type.clock', 'Uhr'),         icon: '🕒', w: 360, h: 150},
+    image:     {label: t('block.type.image', 'Bild'),        icon: '🖼️', w: 520, h: 360},
+    gallery:   {label: t('block.type.gallery', 'Diashow'),   icon: '🎞️', w: 760, h: 480},
+    shape:     {label: t('block.type.shape', 'Form'),        icon: '🟦', w: 600, h: 300},
+    weather:   {label: t('block.type.weather', 'Wetter'),    icon: '⛅', w: 460, h: 360},
+    rss:       {label: t('block.type.rss', 'RSS-Feed'),      icon: '📡', w: 760, h: 460},
+    ticker:    {label: t('block.type.ticker', 'Laufband'),   icon: '📰', w: 1920, h: 110},
+    table:     {label: t('block.type.table', 'Tabelle'),     icon: '▦',  w: 760, h: 420},
+    webpage:   {label: t('block.type.webpage', 'Webseite'),  icon: '🌐', w: 900, h: 600},
+    qrcode:    {label: t('block.type.qrcode', 'QR-Code'),    icon: '🔳', w: 320, h: 380},
+    countdown: {label: t('block.type.countdown', 'Countdown'), icon: '⏳', w: 560, h: 240},
+    animation: {label: t('block.type.animation', 'Animation'), icon: '✨', w: 900, h: 600},
+    video:     {label: t('block.type.video', 'Video'),       icon: '🎬', w: 960, h: 540}
   };
 
   function escapeHtml(value) {
@@ -60,24 +79,28 @@ window.SchauboardBlocks = (function () {
       align: type === 'clock' || type === 'countdown' || type === 'qrcode' ? 'center' : 'left',
       font_size: type === 'heading' ? 96 : type === 'clock' ? 96 : type === 'countdown' ? 80 : 42
     };
-    if (type === 'text') { base.text = 'Neuer Text'; base.bold = false; }
-    if (type === 'heading') { base.text = 'Überschrift'; base.bold = true; }
+    if (type === 'text') { base.text = t('block.text.default', 'Neuer Text'); base.bold = false; }
+    if (type === 'heading') { base.text = t('block.heading.default', 'Überschrift'); base.bold = true; }
     if (type === 'clock') { base.clock_format = 'HH:MM'; base.show_date = false; }
     if (type === 'image') { base.src = ''; base.fit = 'cover'; }
     if (type === 'gallery') { base.images = []; base.interval = 6; base.fit = 'cover'; }
     if (type === 'shape') { base.kind = 'rect'; base.color = '#5f8cff'; base.opacity = 100; base.radius = 24; }
     if (type === 'weather') { base.city = ''; base.font_size = 40; base.show_forecast = false; } // leer = globalen Standardort aus den Einstellungen nutzen
     if (type === 'rss') { base.url = ''; base.count = 5; base.show_time = true; base.show_source = false; base.font_size = 36; }
-    if (type === 'ticker') { base.text = 'Willkommen bei Schauboard – hier läuft Ihr Lauftext.'; base.speed = 60; base.bg = '#313244'; base.font_size = 48; }
+    if (type === 'ticker') { base.text = t('block.ticker.default', 'Willkommen bei Schauboard – hier läuft Ihr Lauftext.'); base.speed = 60; base.bg = '#313244'; base.font_size = 48; }
     if (type === 'table') {
-      base.table_data = [['Produkt', 'Preis'], ['Kaffee', 'CHF 4.50'], ['Tee', 'CHF 3.80']];
+      base.table_data = [
+        [t('block.table.default.head1', 'Produkt'), t('block.table.default.head2', 'Preis')],
+        [t('block.table.default.row1', 'Kaffee'), 'CHF 4.50'],
+        [t('block.table.default.row2', 'Tee'), 'CHF 3.80']
+      ];
       base.header_bg = '#313244'; base.header_color = '#cba6f7';
       base.cell_color = '#ffffff'; base.border_color = '#45475a';
       base.font_size = 30;
     }
     if (type === 'webpage') { base.url = ''; base.refresh_minutes = 0; base.zoom = 100; }
     if (type === 'qrcode') { base.data = 'https://schauboard.ch'; base.label = ''; base.font_size = 30; }
-    if (type === 'countdown') { base.target = ''; base.label = 'Countdown'; }
+    if (type === 'countdown') { base.target = ''; base.label = t('block.countdown.default_label', 'Countdown'); }
     if (type === 'animation') { base.html = ''; }
     if (type === 'video') { base.src = ''; base.fit = 'cover'; }
     return base;
@@ -141,7 +164,7 @@ window.SchauboardBlocks = (function () {
       inner.style.transform = 'scale(' + scale + ')';
       inner.style.fontSize = (Math.max(10, num(block.font_size, 42)) * sc) + 'px';
       inner.style.fontWeight = block.bold || type === 'heading' ? '800' : '700';
-      inner.innerHTML = escapeHtml(block.text || (type === 'heading' ? 'Überschrift' : 'Textblock')).replace(/\n/g, '<br>');
+      inner.innerHTML = escapeHtml(block.text || (type === 'heading' ? t('block.heading.default', 'Überschrift') : t('block.text.placeholder', 'Textblock'))).replace(/\n/g, '<br>');
       return inner;
     }
 
@@ -164,7 +187,7 @@ window.SchauboardBlocks = (function () {
         img.style.objectFit = block.fit || 'cover';
         inner.appendChild(img);
       } else {
-        inner.innerHTML = '<div class="sb-block-empty">Bild – Quelle im Editor setzen</div>';
+        inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.image.empty', 'Bild – Quelle im Editor setzen')) + '</div>';
       }
       return inner;
     }
@@ -173,7 +196,7 @@ window.SchauboardBlocks = (function () {
       inner.style.padding = '0';
       var gImgs = Array.isArray(block.images) ? block.images.filter(Boolean) : [];
       if (!gImgs.length) {
-        inner.innerHTML = '<div class="sb-block-empty">Diashow – Bilder im Editor hinzufügen</div>';
+        inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.gallery.empty', 'Diashow – Bilder im Editor hinzufügen')) + '</div>';
         return inner;
       }
       var gWrap = document.createElement('div');
@@ -196,7 +219,7 @@ window.SchauboardBlocks = (function () {
       if (mode === 'editor' && gImgs.length > 1) {
         var gBadge = document.createElement('div');
         gBadge.className = 'sb-g-badge';
-        gBadge.textContent = '🎞️ ' + gImgs.length + ' Bilder · ' + Math.max(2, num(block.interval, 6)) + 's';
+        gBadge.textContent = t('block.gallery.badge', '🎞️ {n} Bilder · {s}s', {n: gImgs.length, s: Math.max(2, num(block.interval, 6))});
         gWrap.appendChild(gBadge);
       }
       inner.appendChild(gWrap);
@@ -228,14 +251,14 @@ window.SchauboardBlocks = (function () {
         '<div class="sb-w-emoji" style="font-size:' + (wFont * 2.2) + 'px">⛅</div>' +
         '<div class="sb-w-city" style="font-size:' + wFont + 'px">' + escapeHtml(wCity) + '</div>' +
         '<div class="sb-w-temp" style="font-size:' + (wFont * 1.6) + 'px">-- °C</div>' +
-        '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">Lädt…</div>' +
+        '<div class="sb-w-desc" style="font-size:' + (wFont * 0.8) + 'px">' + escapeHtml(t('common.loading', 'Lädt…')) + '</div>' +
         (block.show_forecast ? '<div class="sb-w-fc" style="font-size:' + (wFont * 0.72) + 'px"></div>' : '');
       return inner;
     }
 
     if (type === 'rss') {
       if (!block.url) {
-        inner.innerHTML = '<div class="sb-block-empty">RSS-Feed – Feed-URL im Editor setzen</div>';
+        inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.rss.empty', 'RSS-Feed – Feed-URL im Editor setzen')) + '</div>';
         return inner;
       }
       inner.style.fontSize = (Math.max(10, num(block.font_size, 36)) * sc) + 'px';
@@ -244,7 +267,7 @@ window.SchauboardBlocks = (function () {
       inner.dataset.count = String(Math.max(1, Math.min(15, num(block.count, 5))));
       inner.dataset.showTime = block.show_time === false ? '' : '1';
       inner.dataset.showSource = block.show_source ? '1' : '';
-      inner.innerHTML = '<div class="sb-rss"><div class="sb-rss-loading">📡 Lädt…</div></div>';
+      inner.innerHTML = '<div class="sb-rss"><div class="sb-rss-loading">' + escapeHtml(t('block.rss.loading', '📡 Lädt…')) + '</div></div>';
       return inner;
     }
 
@@ -256,7 +279,7 @@ window.SchauboardBlocks = (function () {
       track.style.fontSize = (Math.max(12, num(block.font_size, 48)) * sc) + 'px';
       track.style.animationDuration = duration + 's'; // Startwert; applyLive korrigiert nach Layout
       track.style.padding = '0 ' + (60 * sc) + 'px';
-      track.textContent = block.text || 'Laufband';
+      track.textContent = block.text || t('block.type.ticker', 'Laufband');
       inner.appendChild(track);
       return inner;
     }
@@ -303,9 +326,9 @@ window.SchauboardBlocks = (function () {
         }
         inner.appendChild(frame);
       } else {
-        inner.innerHTML = '<div class="sb-webpage-fallback">🌐 <strong>Webseite</strong>' +
-          '<span class="sb-wp-url">' + escapeHtml(block.url || 'Noch keine URL gesetzt') + '</span>' +
-          '<span style="font-size:.72em;opacity:.7">' + (mode === 'editor' ? 'Live-Vorschau erst auf dem Display' : 'Diese Seite erlaubt keine Einbettung') + '</span></div>';
+        inner.innerHTML = '<div class="sb-webpage-fallback">🌐 <strong>' + escapeHtml(t('block.type.webpage', 'Webseite')) + '</strong>' +
+          '<span class="sb-wp-url">' + escapeHtml(block.url || t('block.webpage.no_url', 'Noch keine URL gesetzt')) + '</span>' +
+          '<span style="font-size:.72em;opacity:.7">' + escapeHtml(mode === 'editor' ? t('block.webpage.preview_display_only', 'Live-Vorschau erst auf dem Display') : t('block.webpage.no_embed', 'Diese Seite erlaubt keine Einbettung')) + '</span></div>';
       }
       return inner;
     }
@@ -322,8 +345,8 @@ window.SchauboardBlocks = (function () {
         aframe.srcdoc = String(block.html);
         inner.appendChild(aframe);
       } else {
-        inner.innerHTML = '<div class="sb-anim-ph">✨ Animation' +
-          '<span>' + (block.html ? 'Live-Vorschau auf dem Display / per „Vorschau“' : 'HTML/CSS im Editor einfügen') + '</span></div>';
+        inner.innerHTML = '<div class="sb-anim-ph">✨ ' + escapeHtml(t('block.type.animation', 'Animation')) +
+          '<span>' + escapeHtml(block.html ? t('block.preview_live_hint', 'Live-Vorschau auf dem Display / per „Vorschau“') : t('block.animation.empty', 'HTML/CSS im Editor einfügen')) + '</span></div>';
       }
       return inner;
     }
@@ -350,8 +373,8 @@ window.SchauboardBlocks = (function () {
           inner.appendChild(vid);
         }
       } else {
-        inner.innerHTML = '<div class="sb-anim-ph">🎬 Video' +
-          '<span>' + (block.src ? (ytid ? 'YouTube – Live-Vorschau auf dem Display / per „Vorschau“' : 'Live-Vorschau auf dem Display / per „Vorschau“') : 'Datei, URL oder YouTube-Link setzen') + '</span></div>';
+        inner.innerHTML = '<div class="sb-anim-ph">🎬 ' + escapeHtml(t('block.type.video', 'Video')) +
+          '<span>' + escapeHtml(block.src ? (ytid ? t('block.video.preview_youtube', 'YouTube – Live-Vorschau auf dem Display / per „Vorschau“') : t('block.preview_live_hint', 'Live-Vorschau auf dem Display / per „Vorschau“')) : t('block.video.empty', 'Datei, URL oder YouTube-Link setzen')) + '</span></div>';
       }
       return inner;
     }
@@ -360,10 +383,10 @@ window.SchauboardBlocks = (function () {
       var size = Math.min(num(block.w, 320), num(block.h, 320)) - 40;
       var img = document.createElement('img');
       img.src = qrSrc(block.data, size);
-      img.alt = 'QR-Code';
+      img.alt = t('block.type.qrcode', 'QR-Code');
       img.draggable = false; // wie beim Bild-Block: nativen Drag verhindern, sonst klemmt das Verschieben
       // QR wird extern erzeugt (api.qrserver.com) -> im Offline-LAN sichtbarer Hinweis statt leerem Kasten.
-      img.onerror = function () { inner.innerHTML = '<div class="sb-block-empty">QR-Code offline nicht verfügbar</div>'; };
+      img.onerror = function () { inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.qrcode.offline', 'QR-Code offline nicht verfügbar')) + '</div>'; };
       inner.appendChild(img);
       if (block.label) {
         var label = document.createElement('div');
@@ -394,7 +417,7 @@ window.SchauboardBlocks = (function () {
       return inner;
     }
 
-    inner.innerHTML = '<div class="sb-block-empty">Unbekannter Block</div>';
+    inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.unknown', 'Unbekannter Block')) + '</div>';
     return inner;
   }
 
@@ -457,7 +480,7 @@ window.SchauboardBlocks = (function () {
       var mins = Math.floor((totalSec % 3600) / 60);
       var secs = totalSec % 60;
       valueEl.textContent = days > 0
-        ? days + 'T ' + pad(hours) + ':' + pad(mins) + ':' + pad(secs)
+        ? t('block.countdown.days', '{n}T {time}', {n: days, time: pad(hours) + ':' + pad(mins) + ':' + pad(secs)})
         : pad(hours) + ':' + pad(mins) + ':' + pad(secs);
     });
   }
@@ -479,7 +502,7 @@ window.SchauboardBlocks = (function () {
       // Sichtbarer Offline-Zustand statt dauerhaftem "Laedt…" (typisch im reinen LAN ohne Internet).
       if (emoji) emoji.textContent = '🌐';
       if (temp) temp.textContent = '–';
-      if (desc) desc.textContent = 'Wetter offline';
+      if (desc) desc.textContent = t('weather.offline', 'Wetter offline');
       if (fc) fc.innerHTML = '';
       return;
     }
@@ -533,11 +556,11 @@ window.SchauboardBlocks = (function () {
   function rssAge(ts) {
     if (!ts) return '';
     var mins = (Date.now() / 1000 - ts) / 60;
-    if (mins < 1) return 'gerade eben';
-    if (mins < 60) return 'vor ' + Math.round(mins) + ' Min.';
-    if (mins < 48 * 60) return 'vor ' + Math.round(mins / 60) + ' Std.';
+    if (mins < 1) return t('block.rss.age.now', 'gerade eben');
+    if (mins < 60) return t('block.rss.age.minutes', 'vor {n} Min.', {n: Math.round(mins)});
+    if (mins < 48 * 60) return t('block.rss.age.hours', 'vor {n} Std.', {n: Math.round(mins / 60)});
     var d = new Date(ts * 1000);
-    return pad(d.getDate()) + '.' + pad(d.getMonth() + 1) + '.';
+    return t('block.rss.age.date', '{d}.{m}.', {d: pad(d.getDate()), m: pad(d.getMonth() + 1)});
   }
 
   function paintRss(el, data) {
@@ -545,7 +568,7 @@ window.SchauboardBlocks = (function () {
     if (!box) return;
     if (!data || data.error || !Array.isArray(data.items) || !data.items.length) {
       // Sichtbarer Offline-Zustand statt dauerhaftem "Laedt…" (wie beim Wetter).
-      box.innerHTML = '<div class="sb-rss-loading">📡 Feed offline</div>';
+      box.innerHTML = '<div class="sb-rss-loading">' + escapeHtml(t('block.rss.offline', '📡 Feed offline')) + '</div>';
       return;
     }
     var count = Math.max(1, Math.min(15, Number(el.dataset.count) || 5));

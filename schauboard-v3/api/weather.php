@@ -13,7 +13,7 @@ header('Access-Control-Allow-Origin: *');
 $cityRaw = preg_replace('/[^a-zA-Z0-9\-_\+ äöüÄÖÜéèàç\.,]/u', '', (string) ($_GET['city'] ?? 'Zurich'));
 $cityRaw = trim($cityRaw);
 if ($cityRaw === '') {
-    echo json_encode(['error' => 'Kein Ort']);
+    echo json_encode(['error' => t('weather.error.no_city', 'Kein Ort')]);
     exit;
 }
 
@@ -21,7 +21,10 @@ $cacheDir = dirname(__DIR__) . '/data/cache';
 if (!is_dir($cacheDir)) {
     @mkdir($cacheDir, 0775, true);
 }
-$cacheFile = $cacheDir . '/weather_' . md5($cityRaw) . '.json';
+// Die Wetterbeschreibung ist uebersetzt -> die Sprache MUSS in den Cache-Schluessel,
+// sonst zeigt das Display nach einem Sprachwechsel bis zum Ablauf des Caches
+// weiter die alte Sprache. (Der Geo-Cache bleibt sprachunabhaengig: reine Koordinaten.)
+$cacheFile = $cacheDir . '/weather_' . md5($cityRaw) . '_' . schauboard_language() . '.json';
 $cacheTtl = 600;          // 10 Min frisch
 $staleMaxAge = 3 * 3600;  // alten Cache hoechstens 3h als Fallback ausgeben
 
@@ -68,7 +71,7 @@ $serveStaleOrError = static function () use ($cacheFile, $staleMaxAge) {
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $staleMaxAge) {
         echo file_get_contents($cacheFile);
     } else {
-        echo json_encode(['error' => 'Wetter nicht verfügbar']);
+        echo json_encode(['error' => t('weather.error.unavailable', 'Wetter nicht verfügbar')]);
     }
     exit;
 };
@@ -119,21 +122,21 @@ if (!is_array($cur) || !isset($cur['temperature_2m'])) {
 // WMO-Wettercode -> Emoji + deutscher Text (fuer aktuell UND Vorhersage-Tage).
 $wmo = static function (int $code): array {
     return match (true) {
-        $code === 0 => ['☀️', 'Klar'],
-        $code === 1 => ['🌤️', 'Überwiegend klar'],
-        $code === 2 => ['⛅', 'Teils bewölkt'],
-        $code === 3 => ['☁️', 'Bewölkt'],
-        in_array($code, [45, 48], true) => ['🌫️', 'Nebel'],
-        in_array($code, [51, 53, 55], true) => ['🌦️', 'Niesel'],
-        in_array($code, [56, 57], true) => ['🌧️', 'Gefrierender Niesel'],
-        in_array($code, [61, 63, 65], true) => ['🌧️', 'Regen'],
-        in_array($code, [66, 67], true) => ['🌧️', 'Gefrierender Regen'],
-        in_array($code, [71, 73, 75], true) => ['🌨️', 'Schnee'],
-        $code === 77 => ['🌨️', 'Schneegriesel'],
-        in_array($code, [80, 81, 82], true) => ['🌧️', 'Regenschauer'],
-        in_array($code, [85, 86], true) => ['🌨️', 'Schneeschauer'],
-        $code === 95 => ['⛈️', 'Gewitter'],
-        in_array($code, [96, 99], true) => ['⛈️', 'Gewitter mit Hagel'],
+        $code === 0 => ['☀️', t('weather.wmo.clear', 'Klar')],
+        $code === 1 => ['🌤️', t('weather.wmo.mostly_clear', 'Überwiegend klar')],
+        $code === 2 => ['⛅', t('weather.wmo.partly_cloudy', 'Teils bewölkt')],
+        $code === 3 => ['☁️', t('weather.wmo.cloudy', 'Bewölkt')],
+        in_array($code, [45, 48], true) => ['🌫️', t('weather.wmo.fog', 'Nebel')],
+        in_array($code, [51, 53, 55], true) => ['🌦️', t('weather.wmo.drizzle', 'Niesel')],
+        in_array($code, [56, 57], true) => ['🌧️', t('weather.wmo.freezing_drizzle', 'Gefrierender Niesel')],
+        in_array($code, [61, 63, 65], true) => ['🌧️', t('weather.wmo.rain', 'Regen')],
+        in_array($code, [66, 67], true) => ['🌧️', t('weather.wmo.freezing_rain', 'Gefrierender Regen')],
+        in_array($code, [71, 73, 75], true) => ['🌨️', t('weather.wmo.snow', 'Schnee')],
+        $code === 77 => ['🌨️', t('weather.wmo.snow_grains', 'Schneegriesel')],
+        in_array($code, [80, 81, 82], true) => ['🌧️', t('weather.wmo.rain_showers', 'Regenschauer')],
+        in_array($code, [85, 86], true) => ['🌨️', t('weather.wmo.snow_showers', 'Schneeschauer')],
+        $code === 95 => ['⛈️', t('weather.wmo.thunderstorm', 'Gewitter')],
+        in_array($code, [96, 99], true) => ['⛈️', t('weather.wmo.thunderstorm_hail', 'Gewitter mit Hagel')],
         default => ['🌡️', ''],
     };
 };
@@ -144,7 +147,15 @@ $wmo = static function (int $code): array {
 $forecast = [];
 $daily = is_array($wx) ? ($wx['daily'] ?? null) : null;
 if (is_array($daily) && isset($daily['time']) && is_array($daily['time'])) {
-    $dayNames = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So'];
+    $dayNames = [
+        t('weather.day.mon', 'Mo'),
+        t('weather.day.tue', 'Di'),
+        t('weather.day.wed', 'Mi'),
+        t('weather.day.thu', 'Do'),
+        t('weather.day.fri', 'Fr'),
+        t('weather.day.sat', 'Sa'),
+        t('weather.day.sun', 'So'),
+    ];
     $count = count($daily['time']);
     for ($i = 1; $i < $count && count($forecast) < 3; $i++) {
         $ts = strtotime((string) $daily['time'][$i]);

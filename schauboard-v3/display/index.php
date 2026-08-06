@@ -97,18 +97,18 @@ $displayConfig = [
     ),
     'preview' => $isPreview,
     'emptyMessage' => $playlistNotFound
-        ? 'Zugewiesene Playlist nicht gefunden – bitte im Admin pruefen.'
+        ? t('display.empty.playlist_missing', 'Zugewiesene Playlist nicht gefunden – bitte im Admin pruefen.')
         : ($skippedByDate > 0
-            ? 'Keine aktive Folie – alle Folien dieser Playlist sind zurzeit ausserhalb ihres Gueltigkeitszeitraums.'
-            : 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.'),
+            ? t('display.empty.all_out_of_range', 'Keine aktive Folie – alle Folien dieser Playlist sind zurzeit ausserhalb ihres Gueltigkeitszeitraums.')
+            : t('display.empty.no_playlist', 'Keine aktive Folie – bitte im Admin eine Playlist zuweisen.')),
 ];
 
-$pageTitle = $maintenance ? 'Wartung' : ($display['name'] ?? 'Schauboard Display');
+$pageTitle = $maintenance ? t('display.title.maintenance', 'Wartung') : ($display['name'] ?? 'Schauboard Display');
 // Cache-Busting: Asset-URLs bekommen die App-Version angehaengt, damit Browser/TVs
 // nach einem Update sofort den neuen Code laden (statt veraltetem blocks.js aus dem Cache).
 $assetVer = rawurlencode((string) (schauboard_version()['current'] ?? '0'));
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="<?= htmlspecialchars(schauboard_language()) ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -129,8 +129,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:
 <?php if ($maintenance): ?>
   <div class="maintenance">
     <div>
-      <h1>🛠️ Wartung</h1>
-      <p><?= htmlspecialchars($maintenanceMessage !== '' ? $maintenanceMessage : 'Dieses Display ist gerade im Wartungsmodus.') ?></p>
+      <h1><?= te('display.maintenance.title', '🛠️ Wartung') ?></h1>
+      <p><?= htmlspecialchars($maintenanceMessage !== '' ? $maintenanceMessage : t('display.maintenance.text', 'Dieses Display ist gerade im Wartungsmodus.')) ?></p>
     </div>
   </div>
   <script>
@@ -168,7 +168,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:#02060d;font-family:
   <div class="display-shell">
     <main id="sbStage"></main>
   </div>
-  <script>window.SCHAUBOARD_DISPLAY = <?= json_encode($displayConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
+  <script>window.SB_LANG = <?= json_encode((object) schauboard_translations_for_js(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
+  window.SCHAUBOARD_DISPLAY = <?= json_encode($displayConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
   <script src="<?= htmlspecialchars($rootBase) ?>assets/blocks.js?v=<?= $assetVer ?>"></script>
   <script src="<?= htmlspecialchars($rootBase) ?>assets/display.js?v=<?= $assetVer ?>"></script>
 <?php endif; ?>

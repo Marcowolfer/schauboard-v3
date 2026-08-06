@@ -7,14 +7,14 @@ header('Content-Type: application/json; charset=UTF-8');
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !isset($_FILES['file'])) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Keine Datei empfangen.']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.no_file', 'Keine Datei empfangen.')]);
     exit;
 }
 
 $file = $_FILES['file'];
 if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Upload fehlgeschlagen (Code ' . (int) $file['error'] . ').']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.failed', 'Upload fehlgeschlagen (Code {code}).', ['code' => (int) $file['error']])]);
     exit;
 }
 
@@ -34,7 +34,7 @@ $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime = $finfo->file($file['tmp_name']);
 if (!isset($allowed[$mime])) {
     http_response_code(415);
-    echo json_encode(['ok' => false, 'error' => 'Nur Bilder (JPG, PNG, GIF, WebP) oder Videos (MP4, WebM) erlaubt.']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.type_not_allowed', 'Nur Bilder (JPG, PNG, GIF, WebP) oder Videos (MP4, WebM) erlaubt.')]);
     exit;
 }
 
@@ -42,7 +42,7 @@ $isVideo = isset($videos[$mime]);
 $maxBytes = $isVideo ? 100 * 1024 * 1024 : 25 * 1024 * 1024;
 if (($file['size'] ?? 0) > $maxBytes) {
     http_response_code(413);
-    echo json_encode(['ok' => false, 'error' => 'Datei zu gross (max. ' . ($isVideo ? '100 MB' : '25 MB') . '). Sehr grosse Videos brauchen evtl. hoehere upload_max_filesize/post_max_size in der php.ini.']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.too_large', 'Datei zu gross (max. {max}). Sehr grosse Videos brauchen evtl. hoehere upload_max_filesize/post_max_size in der php.ini.', ['max' => $isVideo ? '100 MB' : '25 MB'])]);
     exit;
 }
 
@@ -50,14 +50,14 @@ $config = schauboard_config();
 $uploadsDir = $config['uploads_dir'] ?? (dirname(__DIR__) . '/uploads');
 if (!is_dir($uploadsDir) && !mkdir($uploadsDir, 0775, true) && !is_dir($uploadsDir)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Upload-Ordner nicht beschreibbar.']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.dir_not_writable', 'Upload-Ordner nicht beschreibbar.')]);
     exit;
 }
 
 $name = 'm_' . bin2hex(random_bytes(8)) . '.' . $allowed[$mime];
 if (!move_uploaded_file($file['tmp_name'], $uploadsDir . '/' . $name)) {
     http_response_code(500);
-    echo json_encode(['ok' => false, 'error' => 'Datei konnte nicht gespeichert werden.']);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.save_failed', 'Datei konnte nicht gespeichert werden.')]);
     exit;
 }
 
