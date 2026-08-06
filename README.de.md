@@ -8,7 +8,7 @@ Die Inhalte verlassen deinen Server nie.
 
 *[English version: README.md](README.md)*
 
-![Der Editor](docs/screenshots/editor.png)
+![Der Editor](schauboard-v3/docs/screenshots/editor.png)
 
 ## Warum noch ein Signage-Tool?
 
@@ -49,7 +49,7 @@ Fünfzehn Blocktypen, frei platzierbar auf einer 1920×1080-Bühne:
   rollt bei Fehlern automatisch zurück. `data/`, `uploads/` und `config.local.php` bleiben unberührt.
 - **Wartungsmodus** — Hinweis auf allen Schirmen, während du umbaust.
 
-![Ein Display im Betrieb](docs/screenshots/display.png)
+![Ein Display im Betrieb](schauboard-v3/docs/screenshots/display.png)
 
 ## Schnellstart
 
@@ -129,11 +129,11 @@ Editor-Bühne als auch der Fernseher rufen denselben Code auf.
 
 ## Dokumentation
 
-- [docs/TESTING.md](docs/TESTING.md) — Abnahme-Checkliste
+- [docs/TESTING.md](schauboard-v3/docs/TESTING.md) — Abnahme-Checkliste
 - [Handbuch (PDF)](https://schauboard.ch/dl/doku/signage-doku.pdf)
 - Projektseite: [schauboard.ch](https://schauboard.ch)
 
 ## Lizenz
 
-[Apache License 2.0](../LICENSE) — frei nutzbar, änderbar und weitergebbar, auch kommerziell.
-Namensnennung gemäss [NOTICE](../NOTICE).
+[Apache License 2.0](LICENSE) — frei nutzbar, änderbar und weitergebbar, auch kommerziell.
+Namensnennung gemäss [NOTICE](NOTICE).
