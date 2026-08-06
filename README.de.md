@@ -19,6 +19,7 @@ der Platte; ein Backup ist das Kopieren eines Verzeichnisses.
 - **Keine Datenbank.** Inhalte als JSON, atomar geschrieben, mit rotierenden Sicherungen.
 - **Keine Cloud, kein Konto, keine Telemetrie.** Displays sprechen nur mit deinem eigenen Server.
 - **Kein Build-Schritt.** Reines PHP und Vanilla-JavaScript — Datei ändern, Seite neu laden.
+- **Deutsch und Englisch**, in den Einstellungen umschaltbar.
 - **Läuft dort, wo du schon PHP hast.** Synology Web Station, Raspberry Pi, Webhosting, XAMPP.
 - **Ein Editor, eine Render-Engine.** Vorschau und TV nutzen exakt denselben Code — die Vorschau
   kann gar nicht vom Ergebnis abweichen.
@@ -119,6 +120,10 @@ Editor-Bühne als auch der Fernseher rufen denselben Code auf.
 
 ## Gut zu wissen
 
+- **Zweisprachig (Deutsch/Englisch).** Umschaltbar unter *Einstellungen → Sprache*; Anzeige-Seite,
+  Server-Meldungen und Wetterlage folgen derselben Einstellung. Deutsch ist für jeden Text der
+  Rückfall — fehlt eine Übersetzung, erscheint Deutsch statt einer leeren Beschriftung. Eine
+  weitere Sprache ergänzt man mit einer Datei `lang/<code>.php` neben `lang/en.php`.
 - Displays telefonieren nicht nach Hause. Die einzige ausgehende Verbindung ist die Update-Prüfung
   gegen die Projekt-Website; abschaltbar in `config.local.php`:
   ```php

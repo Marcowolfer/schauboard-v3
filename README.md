@@ -18,6 +18,7 @@ Most self-hosted signage needs Docker, a database, a message broker — or all t
 - **No database.** Content is JSON on disk, written atomically with rotating backups.
 - **No cloud, no account, no telemetry.** Displays only ever talk to your own server.
 - **No build step.** Plain PHP and vanilla JavaScript — edit a file, reload the page.
+- **English and German**, switchable in the settings.
 - **Runs where you already have PHP.** Synology Web Station, a Pi, shared hosting, XAMPP.
 - **One editor, one renderer.** The editor preview and the TV use the exact same rendering code,
   so what you design is what you get.
@@ -120,8 +121,10 @@ the admin canvas and the TV call into it. That is why the preview cannot drift f
 
 ## Good to know
 
-- **The user interface is German only** for now. The code and this README are English, and the
-  strings are not extracted yet — contributions towards i18n are very welcome.
+- **Available in English and German.** Switch under *Settings → Language*; the display side,
+  server messages and weather conditions follow the same setting. German is kept as the fallback
+  for every string, so a missing translation shows German rather than an empty label. Adding
+  another language means dropping a `lang/<code>.php` next to `lang/en.php`.
 - Displays never phone home. The only outbound request is the update check against the project
   website, and you can switch it off in `config.local.php`:
   ```php
