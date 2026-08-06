@@ -136,3 +136,8 @@ the admin canvas and the TV call into it. That is why the preview cannot drift f
 - [docs/TESTING.md](docs/TESTING.md) — acceptance checklist
 - [Handbook (German, PDF)](https://schauboard.ch/dl/doku/signage-doku.pdf)
 - Project website: [schauboard.ch](https://schauboard.ch)
+
+## License
+
+Licensed under the [Apache License 2.0](../LICENSE) — free to use, modify and distribute,
+including commercially. See [NOTICE](../NOTICE) for attribution.

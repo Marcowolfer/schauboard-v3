@@ -132,3 +132,8 @@ Editor-Bühne als auch der Fernseher rufen denselben Code auf.
 - [docs/TESTING.md](docs/TESTING.md) — Abnahme-Checkliste
 - [Handbuch (PDF)](https://schauboard.ch/dl/doku/signage-doku.pdf)
 - Projektseite: [schauboard.ch](https://schauboard.ch)
+
+## Lizenz
+
+[Apache License 2.0](../LICENSE) — frei nutzbar, änderbar und weitergebbar, auch kommerziell.
+Namensnennung gemäss [NOTICE](../NOTICE).
