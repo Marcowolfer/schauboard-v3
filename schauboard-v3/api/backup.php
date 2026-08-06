@@ -28,7 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
-    echo json_encode(['ok' => false, 'error' => 'Methode nicht erlaubt.']);
+    echo json_encode(['ok' => false, 'error' => t('api.method_not_allowed', 'Methode nicht erlaubt.')]);
     exit;
 }
 
@@ -36,7 +36,7 @@ $payload = json_decode((string) file_get_contents('php://input'), true);
 $data = is_array($payload) ? ($payload['data'] ?? null) : null;
 if (!is_array($data)) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Ungueltiges Backup.']);
+    echo json_encode(['ok' => false, 'error' => t('api.backup.invalid', 'Ungueltiges Backup.')]);
     exit;
 }
 
@@ -44,7 +44,7 @@ if (!is_array($data)) {
 $found = array_intersect($datasets, array_keys($data));
 if (!$found) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'Backup enthaelt keine bekannten Daten.']);
+    echo json_encode(['ok' => false, 'error' => t('api.backup.no_known_data', 'Backup enthaelt keine bekannten Daten.')]);
     exit;
 }
 
@@ -73,7 +73,7 @@ foreach ($datasets as $name) {
     $clean = $sanitizers[$name]($data[$name]);
     if (!schauboard_write_dataset($name, $clean)) {
         http_response_code(500);
-        echo json_encode(['ok' => false, 'error' => 'Schreibfehler bei "' . $name . '" (Teil-Import: ' . implode(', ', $written) . ').']);
+        echo json_encode(['ok' => false, 'error' => t('api.backup.write_failed', 'Schreibfehler bei "{name}" (Teil-Import: {written}).', ['name' => $name, 'written' => implode(', ', $written)])]);
         exit;
     }
     $written[] = $name;

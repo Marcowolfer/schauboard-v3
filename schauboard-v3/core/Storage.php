@@ -101,7 +101,7 @@ function schauboard_slides_defaults(): array
     return [
         [
             'id' => 'slide_welcome',
-            'name' => 'Willkommen',
+            'name' => t('display.slide.welcome', 'Willkommen'),
             'bg_color' => '#1a1a2e',
             'bg_image' => '',
             'duration' => 10,
@@ -115,7 +115,7 @@ function schauboard_playlists_defaults(): array
     return [
         [
             'id' => 'playlist_default',
-            'name' => 'Standard',
+            'name' => t('playlist.default_name', 'Standard'),
             'slide_ids' => ['slide_welcome'],
         ],
     ];
@@ -126,7 +126,7 @@ function schauboard_displays_defaults(): array
     return [
         [
             'id' => 'default',
-            'name' => 'Standard Display',
+            'name' => t('display.default_name', 'Standard Display'),
             'default_playlist_id' => 'playlist_default',
             'last_seen_at' => null,
             'token' => '',

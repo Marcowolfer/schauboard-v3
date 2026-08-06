@@ -14,7 +14,7 @@ header('Access-Control-Allow-Origin: *');
 
 $url = schauboard_sanitize_http_url($_GET['url'] ?? '');
 if ($url === '') {
-    echo json_encode(['error' => 'Keine gueltige Feed-URL']);
+    echo json_encode(['error' => t('api.rss.invalid_url', 'Keine gueltige Feed-URL')]);
     exit;
 }
 
@@ -35,7 +35,7 @@ if (!$allowed) {
     }
 }
 if (!$allowed) {
-    echo json_encode(['error' => 'Feed-URL nicht freigegeben']);
+    echo json_encode(['error' => t('api.rss.url_not_allowed', 'Feed-URL nicht freigegeben')]);
     exit;
 }
 
@@ -56,7 +56,7 @@ $serveStaleOrError = static function () use ($cacheFile, $staleMaxAge) {
     if (is_file($cacheFile) && (time() - filemtime($cacheFile)) < $staleMaxAge) {
         echo file_get_contents($cacheFile);
     } else {
-        echo json_encode(['error' => 'Feed nicht verfuegbar']);
+        echo json_encode(['error' => t('api.rss.unavailable', 'Feed nicht verfuegbar')]);
     }
     exit;
 };

@@ -109,8 +109,8 @@ function fmtDate(iso) {
 function slideValidLabel(s) {
   const from = s.valid_from || '', until = s.valid_until || '';
   if (from && until) return fmtDate(from) + ' – ' + fmtDate(until);
-  if (from) return 'ab ' + fmtDate(from);
-  if (until) return 'bis ' + fmtDate(until);
+  if (from) return sbT('editor.slide.valid.from', 'ab {date}', {date: fmtDate(from)});
+  if (until) return sbT('editor.slide.valid.until', 'bis {date}', {date: fmtDate(until)});
   return '';
 }
 
@@ -127,7 +127,7 @@ function ensureEditorSelection() {
 }
 
 function newSlide() {
-  return {id: uid('slide_'), name: 'Neue Folie', bg_color: '#1a1a2e', bg_image: '', duration: Number(APP.settings?.system?.default_slide_duration || 10), valid_from: '', valid_until: '', blocks: []};
+  return {id: uid('slide_'), name: sbT('editor.slide.new', 'Neue Folie'), bg_color: '#1a1a2e', bg_image: '', duration: Number(APP.settings?.system?.default_slide_duration || 10), valid_from: '', valid_until: '', blocks: []};
 }
 function newBlock(type, pos) {
   const d = B.defaults(type);
@@ -147,7 +147,7 @@ function canvasPoint(canvas, cx, cy) {
 
 function addBlock(type, pos) {
   const s = getSlide();
-  if (!s) { toast('Erst eine Folie anlegen.', 'err'); return; }
+  if (!s) { toast(sbT('editor.slide.add_first', 'Erst eine Folie anlegen.'), 'err'); return; }
   const b = newBlock(type, pos);
   s.blocks = s.blocks || [];
   s.blocks.push(b);
@@ -195,7 +195,7 @@ function moveSlide(from, to) {
 function renderSlidesList() {
   const list = document.getElementById('slidesList');
   list.innerHTML = '';
-  if (!state.slides.length) { list.innerHTML = '<div class="muted">Noch keine Folien.</div>'; return; }
+  if (!state.slides.length) { list.innerHTML = '<div class="muted">' + sbT('editor.slides.empty', 'Noch keine Folien.') + '</div>'; return; }
   const clearDrop = () => list.querySelectorAll('.slide-item-btn').forEach(x => x.classList.remove('drop-before', 'drop-after'));
   state.slides.forEach((s, idx) => {
     const btn = document.createElement('button');
@@ -204,15 +204,15 @@ function renderSlidesList() {
     btn.className = 'slide-item-btn' + (s.id === state.selectedSlideId ? ' active' : '');
     // Datums-Gueltigkeit als Badge (rot, wenn die Folie zurzeit nicht angezeigt wird).
     const vState = slideValidState(s);
-    const vBadge = vState ? `<span class="si-valid${vState === 'off' ? ' off' : ''}" title="Gültigkeitszeitraum${vState === 'off' ? ' – zurzeit nicht auf dem Display' : ''}">📅 ${esc(slideValidLabel(s))}${vState === 'off' ? ' · inaktiv' : ''}</span>` : '';
-    btn.innerHTML = `<span class="si-grip" title="Ziehen zum Umsortieren">⠿</span><span class="si-info"><strong>${esc(s.name || 'Folie')}</strong><small>${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s</small>${vBadge}</span>`;
+    const vBadge = vState ? `<span class="si-valid${vState === 'off' ? ' off' : ''}" title="${vState === 'off' ? sbT('editor.slide.validity.off', 'Gültigkeitszeitraum – zurzeit nicht auf dem Display') : sbT('editor.slide.validity', 'Gültigkeitszeitraum')}">📅 ${esc(slideValidLabel(s))}${vState === 'off' ? ' · ' + sbT('common.inactive', 'inaktiv') : ''}</span>` : '';
+    btn.innerHTML = `<span class="si-grip" title="${sbT('editor.slide.drag', 'Ziehen zum Umsortieren')}">⠿</span><span class="si-info"><strong>${esc(s.name || sbT('editor.slide.untitled', 'Folie'))}</strong><small>${sbT('editor.slide.meta', '{n} Blöcke · {d}s', {n: (s.blocks || []).length, d: Number(s.duration || 10)})}</small>${vBadge}</span>`;
     const del = document.createElement('span');
     del.className = 'si-del';
     del.textContent = '✕';
-    del.title = 'Folie löschen';
+    del.title = sbT('editor.slide.delete', 'Folie löschen');
     del.addEventListener('click', (e) => {
       e.stopPropagation();
-      if (state.slides.length <= 1) { toast('Mindestens eine Folie nötig.', 'err'); return; }
+      if (state.slides.length <= 1) { toast(sbT('editor.slide.min_one', 'Mindestens eine Folie nötig.'), 'err'); return; }
       state.slides = state.slides.filter(x => x.id !== s.id);
       if (state.selectedSlideId === s.id) state.selectedSlideId = state.slides[0].id;
       markDirty();
@@ -255,7 +255,7 @@ function renderBlockList() {
   const list = document.getElementById('blockList');
   const s = getSlide();
   list.innerHTML = '';
-  if (!s || !s.blocks || !s.blocks.length) { list.innerHTML = '<div class="muted">Keine Blöcke</div>'; return; }
+  if (!s || !s.blocks || !s.blocks.length) { list.innerHTML = '<div class="muted">' + sbT('editor.blocks.empty', 'Keine Blöcke') + '</div>'; return; }
   // Liste von oben (vorderste Ebene) nach unten (hinterste) anzeigen.
   s.blocks.slice().reverse().forEach((b) => {
     const idx = s.blocks.indexOf(b);
@@ -270,10 +270,10 @@ function renderBlockList() {
     const ctrl = document.createElement('div');
     ctrl.className = 'layer-ctrl';
     const up = document.createElement('button');
-    up.type = 'button'; up.textContent = '▲'; up.title = 'Nach vorne'; up.disabled = idx === s.blocks.length - 1;
+    up.type = 'button'; up.textContent = '▲'; up.title = sbT('editor.layer.front', 'Nach vorne'); up.disabled = idx === s.blocks.length - 1;
     up.addEventListener('click', (e) => { e.stopPropagation(); moveBlock(b.id, 1); });
     const down = document.createElement('button');
-    down.type = 'button'; down.textContent = '▼'; down.title = 'Nach hinten'; down.disabled = idx === 0;
+    down.type = 'button'; down.textContent = '▼'; down.title = sbT('editor.layer.back', 'Nach hinten'); down.disabled = idx === 0;
     down.addEventListener('click', (e) => { e.stopPropagation(); moveBlock(b.id, -1); });
     ctrl.appendChild(up); ctrl.appendChild(down);
     row.appendChild(info); row.appendChild(ctrl);
@@ -300,7 +300,7 @@ function renderCanvas() {
   const canvas = document.getElementById('studioCanvas');
   const s = getSlide();
   canvas.innerHTML = '';
-  if (!s) { canvas.style.background = '#1a1a2e'; canvas.innerHTML = '<div class="canvas-empty">Lege links eine Folie an und ziehe Module aus der Leiste hierher.</div>'; return; }
+  if (!s) { canvas.style.background = '#1a1a2e'; canvas.innerHTML = '<div class="canvas-empty">' + sbT('editor.canvas.empty', 'Lege links eine Folie an und ziehe Module aus der Leiste hierher.') + '</div>'; return; }
   canvas.style.background = s.bg_image ? `${s.bg_color || '#1a1a2e'} url(${s.bg_image}) center/cover no-repeat` : (s.bg_color || '#1a1a2e');
 
   // Schriften aus dem 1920-Koordinatensystem auf die Canvas-Breite herunterskalieren.
@@ -347,15 +347,15 @@ function decorateSelected(node, block) {
     b2.addEventListener('pointerdown', (ev) => ev.stopPropagation());
     return b2;
   };
-  menu.appendChild(mk('✎', 'Bearbeiten', '', () => openModal(block.id)));
-  menu.appendChild(mk('⧉', 'Duplizieren', '', () => {
+  menu.appendChild(mk('✎', sbT('editor.block.edit', 'Bearbeiten'), '', () => openModal(block.id)));
+  menu.appendChild(mk('⧉', sbT('editor.block.duplicate', 'Duplizieren'), '', () => {
     const dup = JSON.parse(JSON.stringify(block));
     dup.id = uid('block_');
     dup.x = clamp(Number(block.x || 0) + 40, 0, 1900);
     dup.y = clamp(Number(block.y || 0) + 40, 0, 1060);
     s.blocks.push(dup); state.selectedBlockId = dup.id; markDirty(); renderEditor();
   }));
-  menu.appendChild(mk('🗑', 'Löschen', 'danger', () => {
+  menu.appendChild(mk('🗑', sbT('common.delete', 'Löschen'), 'danger', () => {
     s.blocks = s.blocks.filter(x => x.id !== block.id);
     state.selectedBlockId = s.blocks[0] ? s.blocks[0].id : null; markDirty(); renderEditor();
   }));
@@ -403,7 +403,7 @@ function renderSlideFields() {
     el.value = s ? (s[field] ?? '') : '';
   });
   const meta = document.getElementById('editorMeta');
-  meta.textContent = s ? `${s.name || 'Folie'} · ${(s.blocks || []).length} Blöcke · ${Number(s.duration || 10)}s` : 'Noch keine Folie ausgewählt.';
+  meta.textContent = s ? sbT('editor.meta', '{name} · {n} Blöcke · {d}s', {name: s.name || sbT('editor.slide.untitled', 'Folie'), n: (s.blocks || []).length, d: Number(s.duration || 10)}) : sbT('editor.meta.none', 'Noch keine Folie ausgewählt.');
   syncColorPicks();
 }
 
@@ -431,14 +431,14 @@ function openModal(blockId) {
   if (!b) return;
   state.modalBlockId = blockId;
   const meta = B.TYPES[b.type] || B.TYPES.text;
-  document.getElementById('modalTitle').textContent = meta.label + ' bearbeiten';
-  document.getElementById('modalSub').textContent = 'Doppelklick auf den Block öffnet diesen Dialog.';
+  document.getElementById('modalTitle').textContent = sbT('modal.title', '{type} bearbeiten', {type: meta.label});
+  document.getElementById('modalSub').textContent = sbT('modal.sub', 'Doppelklick auf den Block öffnet diesen Dialog.');
   document.getElementById('mType').value = b.type;
   document.getElementById('mText').value = b.text || '';
   document.getElementById('mSrc').value = b.src || '';
   document.getElementById('mFit').value = b.fit || 'cover';
   document.getElementById('mCity').value = b.city || '';
-  document.getElementById('mCity').placeholder = 'Standardort: ' + ((APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich');
+  document.getElementById('mCity').placeholder = sbT('modal.city.placeholder', 'Standardort: {city}', {city: (APP.settings && APP.settings.weather && APP.settings.weather.location) || 'Zurich'});
   document.getElementById('mForecast').checked = !!b.show_forecast;
   document.getElementById('mRssUrl').value = b.url || '';
   document.getElementById('mRssCount').value = Number(b.count || 5);
@@ -473,7 +473,7 @@ function openModal(blockId) {
   document.getElementById('mY').value = Number(b.y || 0);
   document.getElementById('mW').value = Number(b.w || 0);
   document.getElementById('mH').value = Number(b.h || 0);
-  state.tableDraft = Array.isArray(b.table_data) ? JSON.parse(JSON.stringify(b.table_data)) : [['Spalte 1', 'Spalte 2'], ['Wert', 'Wert']];
+  state.tableDraft = Array.isArray(b.table_data) ? JSON.parse(JSON.stringify(b.table_data)) : [[sbT('block.table.column', 'Spalte {n}', {n: 1}), sbT('block.table.column', 'Spalte {n}', {n: 2})], [sbT('block.table.value', 'Wert'), sbT('block.table.value', 'Wert')]];
   renderTableGrid();
   showFields(b.type);
   syncColorPicks(); // Swatches an die frisch gesetzten Hex-Werte angleichen
@@ -585,8 +585,8 @@ function sbDownload(filename, obj) {
 function sbReadJsonFile(file) {
   return new Promise((resolve, reject) => {
     const r = new FileReader();
-    r.onload = () => { try { resolve(JSON.parse(r.result)); } catch (e) { reject(new Error('Keine gültige JSON-Datei.')); } };
-    r.onerror = () => reject(new Error('Datei konnte nicht gelesen werden.'));
+    r.onload = () => { try { resolve(JSON.parse(r.result)); } catch (e) { reject(new Error(sbT('editor.file.invalid_json', 'Keine gültige JSON-Datei.'))); } };
+    r.onerror = () => reject(new Error(sbT('editor.file.unreadable', 'Datei konnte nicht gelesen werden.')));
     r.readAsText(file);
   });
 }
@@ -604,7 +604,7 @@ function renderTemplatesList() {
   const list = document.getElementById('templateList');
   if (!list) return;
   list.innerHTML = '';
-  if (!state.templates.length) { list.innerHTML = '<div class="muted">Keine Vorlagen</div>'; return; }
+  if (!state.templates.length) { list.innerHTML = '<div class="muted">' + sbT('editor.templates.empty', 'Keine Vorlagen') + '</div>'; return; }
   state.templates.forEach(t => {
     const blocks = (t.slide && t.slide.blocks) ? t.slide.blocks.length : 0;
     const row = document.createElement('div');
@@ -612,16 +612,16 @@ function renderTemplatesList() {
     const info = document.createElement('button');
     info.type = 'button';
     info.className = 'block-pill-info';
-    info.title = 'Neue Folie aus dieser Vorlage';
-    info.innerHTML = `<strong>📄 ${esc(t.name || 'Vorlage')}</strong><small>${blocks} Blöcke</small>`;
+    info.title = sbT('editor.template.use', 'Neue Folie aus dieser Vorlage');
+    info.innerHTML = `<strong>📄 ${esc(t.name || sbT('editor.template.untitled', 'Vorlage'))}</strong><small>${sbT('editor.template.meta', '{n} Blöcke', {n: blocks})}</small>`;
     info.addEventListener('click', () => createSlideFromTemplate(t.id));
     const ctrl = document.createElement('div');
     ctrl.className = 'layer-ctrl';
     const ex = document.createElement('button');
-    ex.type = 'button'; ex.textContent = '⬇'; ex.title = 'Vorlage exportieren';
+    ex.type = 'button'; ex.textContent = '⬇'; ex.title = sbT('editor.template.export', 'Vorlage exportieren');
     ex.addEventListener('click', (e) => { e.stopPropagation(); sbDownload('schauboard-vorlage-' + sbSafeName(t.name) + '.json', sbEnvelope('template', t)); });
     const del = document.createElement('button');
-    del.type = 'button'; del.textContent = '🗑'; del.title = 'Vorlage löschen';
+    del.type = 'button'; del.textContent = '🗑'; del.title = sbT('editor.template.delete', 'Vorlage löschen');
     del.addEventListener('click', (e) => { e.stopPropagation(); deleteTemplate(t.id); });
     ctrl.appendChild(ex); ctrl.appendChild(del);
     row.appendChild(info); row.appendChild(ctrl);
@@ -633,65 +633,65 @@ async function saveTemplates() {
 }
 async function addTemplateFromCurrentSlide() {
   const s = getSlide();
-  if (!s) { toast('Keine Folie ausgewählt.', 'err'); return; }
-  const name = prompt('Name der Vorlage:', s.name || 'Vorlage');
+  if (!s) { toast(sbT('editor.slide.none_selected', 'Keine Folie ausgewählt.'), 'err'); return; }
+  const name = prompt(sbT('editor.template.name_prompt', 'Name der Vorlage:'), s.name || sbT('editor.template.untitled', 'Vorlage'));
   if (name === null) return;
-  const t = {id: uid('tpl_'), name: (name.trim() || 'Vorlage'), slide: slideForTemplate(s)};
+  const t = {id: uid('tpl_'), name: (name.trim() || sbT('editor.template.untitled', 'Vorlage')), slide: slideForTemplate(s)};
   state.templates.push(t);
-  try { await saveTemplates(); renderTemplatesList(); toast('Als Vorlage gespeichert ✓'); }
+  try { await saveTemplates(); renderTemplatesList(); toast(sbT('toast.template.saved', 'Als Vorlage gespeichert ✓')); }
   catch (e) { state.templates = state.templates.filter(x => x !== t); toast(e.message, 'err'); }
 }
 function createSlideFromTemplate(id) {
   const t = state.templates.find(x => x.id === id);
   if (!t || !t.slide) return;
   const ns = freshSlide(t.slide);
-  ns.name = t.name || ns.name || 'Neue Folie';
+  ns.name = t.name || ns.name || sbT('editor.slide.new', 'Neue Folie');
   state.slides.push(ns);
   state.selectedSlideId = ns.id;
   markDirty();
   renderEditor();
-  toast('Folie aus Vorlage erstellt ✓');
+  toast(sbT('toast.template.slide_created', 'Folie aus Vorlage erstellt ✓'));
 }
 async function deleteTemplate(id) {
   const t = state.templates.find(x => x.id === id);
   if (!t) return;
-  if (!confirm('Vorlage „' + (t.name || '') + '" löschen?')) return;
+  if (!confirm(sbT('editor.template.delete_confirm', 'Vorlage „{name}" löschen?', {name: t.name || ''}))) return;
   const before = state.templates.slice();
   state.templates = state.templates.filter(x => x.id !== id);
-  try { await saveTemplates(); renderTemplatesList(); toast('Vorlage gelöscht'); }
+  try { await saveTemplates(); renderTemplatesList(); toast(sbT('toast.template.deleted', 'Vorlage gelöscht')); }
   catch (e) { state.templates = before; renderTemplatesList(); toast(e.message, 'err'); }
 }
 
 /* ----- Einzel-Folie Export/Import ----- */
 function exportCurrentSlide() {
   const s = getSlide();
-  if (!s) { toast('Keine Folie ausgewählt.', 'err'); return; }
+  if (!s) { toast(sbT('editor.slide.none_selected', 'Keine Folie ausgewählt.'), 'err'); return; }
   sbDownload('schauboard-folie-' + sbSafeName(s.name) + '.json', sbEnvelope('slide', slideForTemplate(s)));
 }
 async function importSlideOrTemplateFile(file) {
   let env;
   try { env = await sbReadJsonFile(file); } catch (e) { toast(e.message, 'err'); return; }
-  if (!env || env.schauboard !== true || !env.data) { toast('Keine Schauboard-Datei.', 'err'); return; }
+  if (!env || env.schauboard !== true || !env.data) { toast(sbT('editor.import.not_schauboard', 'Keine Schauboard-Datei.'), 'err'); return; }
   if (env.kind === 'slide') {
     const ns = freshSlide(env.data);
-    if (!ns.name) ns.name = 'Importierte Folie';
+    if (!ns.name) ns.name = sbT('editor.import.slide_name', 'Importierte Folie');
     state.slides.push(ns);
     state.selectedSlideId = ns.id;
     markDirty();
     renderEditor();
-    toast('Folie importiert ✓ – zum Sichern „Speichern" klicken.');
+    toast(sbT('toast.slide.imported', 'Folie importiert ✓ – zum Sichern „Speichern" klicken.'));
   } else if (env.kind === 'template') {
     const t = env.data;
     t.id = uid('tpl_');
-    if (!t.name) t.name = 'Importierte Vorlage';
+    if (!t.name) t.name = sbT('editor.import.template_name', 'Importierte Vorlage');
     if (!t.slide && t.blocks) t.slide = t; // Toleranz fuer aeltere/abweichende Formate
     state.templates.push(t);
-    try { await saveTemplates(); renderTemplatesList(); toast('Vorlage importiert ✓'); }
+    try { await saveTemplates(); renderTemplatesList(); toast(sbT('toast.template.imported', 'Vorlage importiert ✓')); }
     catch (e) { state.templates = state.templates.filter(x => x !== t); toast(e.message, 'err'); }
   } else if (env.kind === 'backup') {
-    toast('Das ist ein Komplett-Backup – bitte unter „Einstellungen" importieren.', 'err');
+    toast(sbT('editor.import.is_backup', 'Das ist ein Komplett-Backup – bitte unter „Einstellungen" importieren.'), 'err');
   } else {
-    toast('Unbekannter Dateityp.', 'err');
+    toast(sbT('editor.import.unknown_type', 'Unbekannter Dateityp.'), 'err');
   }
 }
 
@@ -700,20 +700,20 @@ async function exportBackup() {
   try {
     const res = await fetch('../api/backup.php', {headers: {'Accept': 'application/json'}});
     const env = await res.json();
-    if (!env || env.schauboard !== true) throw new Error('Export fehlgeschlagen.');
+    if (!env || env.schauboard !== true) throw new Error(sbT('settings.backup.export_failed', 'Export fehlgeschlagen.'));
     const stamp = (env.exported_at || new Date().toISOString()).slice(0, 10);
     sbDownload('schauboard-backup-' + stamp + '.json', env);
-    toast('Backup exportiert ✓');
+    toast(sbT('toast.backup.exported', 'Backup exportiert ✓'));
   } catch (e) { toast(e.message, 'err'); }
 }
 async function importBackupFile(file) {
   let env;
   try { env = await sbReadJsonFile(file); } catch (e) { toast(e.message, 'err'); return; }
-  if (!env || env.schauboard !== true || env.kind !== 'backup' || !env.data) { toast('Kein Schauboard-Backup.', 'err'); return; }
-  if (!confirm('ACHTUNG: Das Backup ERSETZT alle aktuellen Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen).\n\nFortfahren?')) return;
+  if (!env || env.schauboard !== true || env.kind !== 'backup' || !env.data) { toast(sbT('settings.backup.not_backup', 'Kein Schauboard-Backup.'), 'err'); return; }
+  if (!confirm(sbT('settings.backup.import_confirm', 'ACHTUNG: Das Backup ERSETZT alle aktuellen Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen).\n\nFortfahren?'))) return;
   try {
     await postJson('../api/backup.php', {data: env.data});
-    toast('Backup eingespielt ✓ – Seite lädt neu …');
+    toast(sbT('toast.backup.imported', 'Backup eingespielt ✓ – Seite lädt neu …'));
     setTimeout(() => location.reload(), 1500);
   } catch (e) { toast(e.message, 'err'); }
 }
@@ -739,7 +739,7 @@ function initPlaylists() {
   function render() {
     container.innerHTML = '';
     const hint = document.getElementById('emptyHint');
-    if (!state.playlists.length) { hint.style.display = 'block'; hint.textContent = 'Noch keine Playlists – mit „+ Playlist" eine anlegen.'; }
+    if (!state.playlists.length) { hint.style.display = 'block'; hint.textContent = sbT('playlist.empty_hint', 'Noch keine Playlists – mit „+ Playlist" eine anlegen.'); }
     else hint.style.display = 'none';
     const slideName = id => { const s = state.slides.find(x => x.id === id); return s ? (s.name || s.id) : id; };
     // Datums-Gueltigkeit sichtbar machen: 📅 = Zeitraum gesetzt, "inaktiv" = zurzeit nicht auf dem Display.
@@ -748,7 +748,7 @@ function initPlaylists() {
       if (!s) return '';
       const v = slideValidState(s);
       if (!v) return '';
-      return `<span class="pl-valid${v === 'off' ? ' off' : ''}" title="Gültig: ${esc(slideValidLabel(s))}">📅</span>${v === 'off' ? '<span class="pl-inactive" title="Ausserhalb des Gültigkeitszeitraums – wird übersprungen">inaktiv</span>' : ''}`;
+      return `<span class="pl-valid${v === 'off' ? ' off' : ''}" title="${esc(sbT('playlist.slide.valid', 'Gültig: {range}', {range: slideValidLabel(s)}))}">📅</span>${v === 'off' ? '<span class="pl-inactive" title="' + sbT('playlist.slide.inactive_title', 'Ausserhalb des Gültigkeitszeitraums – wird übersprungen') + '">' + sbT('common.inactive', 'inaktiv') + '</span>' : ''}`;
     };
     state.playlists.forEach(pl => {
       // Nur noch existierende Folien behalten (geloeschte Folien aus der Reihenfolge werfen).
@@ -756,18 +756,18 @@ function initPlaylists() {
       const card = document.createElement('article');
       card.className = 'item-card';
       const rows = pl.slide_ids.map((id, i) =>
-        `<div class="pl-slide" draggable="true" data-idx="${i}"><span class="si-grip" title="Ziehen zum Sortieren">⠿</span><span class="pl-slide-name"><span class="pl-num">${i + 1}.</span> ${esc(slideName(id))}</span>${validMark(id)}<span class="pl-del" data-rm="${esc(id)}" title="Aus Playlist entfernen">✕</span></div>`
-      ).join('') || '<div class="muted">Noch keine Folien – unten hinzufügen.</div>';
+        `<div class="pl-slide" draggable="true" data-idx="${i}"><span class="si-grip" title="${sbT('playlist.slide.drag', 'Ziehen zum Sortieren')}">⠿</span><span class="pl-slide-name"><span class="pl-num">${i + 1}.</span> ${esc(slideName(id))}</span>${validMark(id)}<span class="pl-del" data-rm="${esc(id)}" title="${sbT('playlist.slide.remove', 'Aus Playlist entfernen')}">✕</span></div>`
+      ).join('') || '<div class="muted">' + sbT('playlist.slides.empty', 'Noch keine Folien – unten hinzufügen.') + '</div>';
       const notIn = state.slides.filter(s => !pl.slide_ids.includes(s.id));
       let adder;
-      if (!state.slides.length) adder = '<div class="muted" style="margin-top:10px;">Noch keine Folien vorhanden – erst im Editor anlegen.</div>';
-      else if (!notIn.length) adder = '<div class="muted" style="margin-top:10px;">Alle Folien sind in dieser Playlist.</div>';
-      else adder = `<div class="row" style="margin-top:10px;"><select data-addsel style="flex:1;"><option value="">+ Folie hinzufügen …</option>${notIn.map(s => `<option value="${esc(s.id)}">${esc(s.name || s.id)}</option>`).join('')}</select></div>`;
+      if (!state.slides.length) adder = '<div class="muted" style="margin-top:10px;">' + sbT('playlist.no_slides', 'Noch keine Folien vorhanden – erst im Editor anlegen.') + '</div>';
+      else if (!notIn.length) adder = '<div class="muted" style="margin-top:10px;">' + sbT('playlist.all_slides', 'Alle Folien sind in dieser Playlist.') + '</div>';
+      else adder = `<div class="row" style="margin-top:10px;"><select data-addsel style="flex:1;"><option value="">${sbT('playlist.add_slide', '+ Folie hinzufügen …')}</option>${notIn.map(s => `<option value="${esc(s.id)}">${esc(s.name || s.id)}</option>`).join('')}</select></div>`;
       card.innerHTML = `
-        <div class="head"><strong>${esc(pl.name || 'Playlist')}</strong>
-          <button type="button" class="btn small danger" data-del>Entfernen</button></div>
-        <label class="field">Name<input type="text" data-name value="${esc(pl.name || '')}"></label>
-        <div><div class="muted" style="margin-bottom:8px;">Folien in dieser Playlist – ziehen zum Sortieren (Reihenfolge = Anzeige-Reihenfolge auf dem Display):</div>
+        <div class="head"><strong>${esc(pl.name || sbT('playlist.untitled', 'Playlist'))}</strong>
+          <button type="button" class="btn small danger" data-del>${sbT('common.remove', 'Entfernen')}</button></div>
+        <label class="field">${sbT('common.name', 'Name')}<input type="text" data-name value="${esc(pl.name || '')}"></label>
+        <div><div class="muted" style="margin-bottom:8px;">${sbT('playlist.slides_hint', 'Folien in dieser Playlist – ziehen zum Sortieren (Reihenfolge = Anzeige-Reihenfolge auf dem Display):')}</div>
           <div class="pl-slides">${rows}</div>
           ${adder}</div>`;
       card.querySelector('[data-del]').addEventListener('click', () => { state.playlists = state.playlists.filter(x => x !== pl); markDirty(); render(); });
@@ -788,10 +788,10 @@ function initPlaylists() {
     });
   }
   render();
-  document.getElementById('addPlaylist').addEventListener('click', () => { state.playlists.push({id: uid('playlist_'), name: 'Neue Playlist', slide_ids: []}); markDirty(); render(); });
+  document.getElementById('addPlaylist').addEventListener('click', () => { state.playlists.push({id: uid('playlist_'), name: sbT('playlist.new', 'Neue Playlist'), slide_ids: []}); markDirty(); render(); });
   document.getElementById('savePlaylists').addEventListener('click', async () => {
     state.playlists.forEach(pl => { if (!pl.id) pl.id = slug(pl.name) || uid('playlist_'); });
-    try { await postJson('../api/playlists.php', {items: state.playlists}); clearDirty(); toast('Playlists gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/playlists.php', {items: state.playlists}); clearDirty(); toast(sbT('toast.playlists.saved', 'Playlists gespeichert ✓')); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
@@ -816,24 +816,24 @@ function initDisplays() {
       card.className = 'item-card';
       card.innerHTML = `
         <div class="head">
-          <div><strong>${esc(d.name || 'Display')}</strong>
-            <div class="status-dot ${online ? 'online' : ''}"><span class="dot"></span>${online ? 'Online' : 'Offline / noch kein Heartbeat'}</div></div>
-          <button type="button" class="btn small danger" data-del>Entfernen</button>
+          <div><strong>${esc(d.name || sbT('display.untitled', 'Display'))}</strong>
+            <div class="status-dot ${online ? 'online' : ''}"><span class="dot"></span>${online ? sbT('display.status.online', 'Online') : sbT('display.status.offline', 'Offline / noch kein Heartbeat')}</div></div>
+          <button type="button" class="btn small danger" data-del>${sbT('common.remove', 'Entfernen')}</button>
         </div>
         <div class="form-grid">
-          <label class="field">Name<input type="text" data-name value="${esc(d.name || '')}"></label>
-          <label class="field">Zeigt Playlist<select data-playlist>${playlistOptions(d.default_playlist_id)}</select></label>
+          <label class="field">${sbT('common.name', 'Name')}<input type="text" data-name value="${esc(d.name || '')}"></label>
+          <label class="field">${sbT('display.field.playlist', 'Zeigt Playlist')}<select data-playlist>${playlistOptions(d.default_playlist_id)}</select></label>
         </div>
         <div class="url-row">
-          <input class="url-pill" type="text" readonly value="${esc(url)}" title="Klicken markiert die URL – dann Strg+C" onclick="this.select();this.setSelectionRange(0,this.value.length);">
-          <button type="button" class="btn small" data-copy>📋 URL kopieren</button>
-          <a class="btn small" href="${esc(url)}" target="_blank" rel="noreferrer">↗ Öffnen</a>
+          <input class="url-pill" type="text" readonly value="${esc(url)}" title="${sbT('display.url.hint', 'Klicken markiert die URL – dann Strg+C')}" onclick="this.select();this.setSelectionRange(0,this.value.length);">
+          <button type="button" class="btn small" data-copy>${sbT('display.copy_url', '📋 URL kopieren')}</button>
+          <a class="btn small" href="${esc(url)}" target="_blank" rel="noreferrer">${sbT('display.open', '↗ Öffnen')}</a>
           <img alt="QR" width="56" height="56" style="border-radius:8px;background:#fff;padding:3px;" src="${esc(B.qrSrc(url, 120))}">
         </div>
-        <details><summary class="muted" style="cursor:pointer;">Erweitert</summary>
+        <details><summary class="muted" style="cursor:pointer;">${sbT('display.advanced', 'Erweitert')}</summary>
           <div class="form-grid" style="margin-top:10px;">
-            <label class="field">ID (Teil der URL)<input type="text" data-id value="${esc(d.id || '')}"></label>
-            <label class="field">Token (optional)<input type="text" data-token value="${esc(d.token || '')}"></label>
+            <label class="field">${sbT('display.field.id', 'ID (Teil der URL)')}<input type="text" data-id value="${esc(d.id || '')}"></label>
+            <label class="field">${sbT('display.field.token', 'Token (optional)')}<input type="text" data-token value="${esc(d.token || '')}"></label>
           </div>
         </details>`;
       card.querySelector('[data-del]').addEventListener('click', () => { state.displays = state.displays.filter(x => x !== d); markDirty(); render(); });
@@ -848,11 +848,11 @@ function initDisplays() {
       card.querySelector('[data-token]').addEventListener('input', e => { d.token = e.target.value; markDirty(); });
       card.querySelector('[data-copy]').addEventListener('click', async () => {
         const ok = await copyText(url);
-        if (ok) { toast('URL kopiert ✓'); return; }
+        if (ok) { toast(sbT('toast.url.copied', 'URL kopiert ✓')); return; }
         // Fallback: URL-Feld markieren, damit der Nutzer mit Strg+C kopieren kann.
         const pill = card.querySelector('.url-pill');
         if (pill && pill.select) { pill.focus(); pill.select(); pill.setSelectionRange(0, pill.value.length); }
-        toast('URL ist markiert – mit Strg+C kopieren.', 'err');
+        toast(sbT('display.url.selected', 'URL ist markiert – mit Strg+C kopieren.'), 'err');
       });
       container.appendChild(card);
     });
@@ -868,15 +868,20 @@ function initDisplays() {
     const ids = new Set();
     for (const d of state.displays) {
       if (!d.id) d.id = slug(d.name) || uid('display_');
-      if (ids.has(d.id)) { toast('Doppelte Display-ID: ' + d.id, 'err'); return; }
+      if (ids.has(d.id)) { toast(sbT('display.duplicate_id', 'Doppelte Display-ID: {id}', {id: d.id}), 'err'); return; }
       ids.add(d.id);
     }
-    try { await postJson('../api/displays.php', {items: state.displays}); clearDirty(); toast('Displays gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/displays.php', {items: state.displays}); clearDirty(); toast(sbT('toast.displays.saved', 'Displays gespeichert ✓')); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
 /* ===================== SCHEDULES ===================== */
-const DAYS = [['mon', 'Mo'], ['tue', 'Di'], ['wed', 'Mi'], ['thu', 'Do'], ['fri', 'Fr'], ['sat', 'Sa'], ['sun', 'So']];
+const DAYS = [
+  ['mon', sbT('schedule.day.mon', 'Mo')], ['tue', sbT('schedule.day.tue', 'Di')],
+  ['wed', sbT('schedule.day.wed', 'Mi')], ['thu', sbT('schedule.day.thu', 'Do')],
+  ['fri', sbT('schedule.day.fri', 'Fr')], ['sat', sbT('schedule.day.sat', 'Sa')],
+  ['sun', sbT('schedule.day.sun', 'So')],
+];
 function initSchedules() {
   const container = document.getElementById('itemContainer');
   const hint = document.getElementById('emptyHint');
@@ -884,24 +889,24 @@ function initSchedules() {
   function playlistOptions(sel) { return state.playlists.map(p => `<option value="${esc(p.id)}" ${p.id === sel ? 'selected' : ''}>${esc(p.name || p.id)}</option>`).join(''); }
   function render() {
     container.innerHTML = '';
-    if (!state.schedules.length) { hint.style.display = 'block'; hint.textContent = 'Noch keine Zeitpläne. Ohne Zeitplan zeigt jedes Display einfach seine zugewiesene Playlist.'; }
+    if (!state.schedules.length) { hint.style.display = 'block'; hint.textContent = sbT('schedule.empty_hint', 'Noch keine Zeitpläne. Ohne Zeitplan zeigt jedes Display einfach seine zugewiesene Playlist.'); }
     else hint.style.display = 'none';
     state.schedules.forEach(sc => {
       const card = document.createElement('article');
       card.className = 'item-card';
       const days = sc.days || [];
       card.innerHTML = `
-        <div class="head"><strong>${esc(sc.name || 'Zeitplan')}</strong><button type="button" class="btn small danger" data-del>Entfernen</button></div>
+        <div class="head"><strong>${esc(sc.name || sbT('schedule.untitled', 'Zeitplan'))}</strong><button type="button" class="btn small danger" data-del>${sbT('common.remove', 'Entfernen')}</button></div>
         <div class="form-grid">
-          <label class="field">Name<input type="text" data-name value="${esc(sc.name || '')}"></label>
-          <label class="field">Display<select data-display>${displayOptions(sc.display_id)}</select></label>
-          <label class="field">Playlist<select data-playlist>${playlistOptions(sc.playlist_id)}</select></label>
+          <label class="field">${sbT('common.name', 'Name')}<input type="text" data-name value="${esc(sc.name || '')}"></label>
+          <label class="field">${sbT('schedule.field.display', 'Display')}<select data-display>${displayOptions(sc.display_id)}</select></label>
+          <label class="field">${sbT('schedule.field.playlist', 'Playlist')}<select data-playlist>${playlistOptions(sc.playlist_id)}</select></label>
           <div class="form-grid" style="grid-template-columns:1fr 1fr;">
-            <label class="field">Von<input type="time" data-from value="${esc(sc.from || '08:00')}"></label>
-            <label class="field">Bis<input type="time" data-to value="${esc(sc.to || '17:00')}"></label>
+            <label class="field">${sbT('schedule.field.from', 'Von')}<input type="time" data-from value="${esc(sc.from || '08:00')}"></label>
+            <label class="field">${sbT('schedule.field.to', 'Bis')}<input type="time" data-to value="${esc(sc.to || '17:00')}"></label>
           </div>
         </div>
-        <div><div class="muted" style="margin-bottom:6px;">Aktive Tage:</div>
+        <div><div class="muted" style="margin-bottom:6px;">${sbT('schedule.days_label', 'Aktive Tage:')}</div>
           <div class="day-picker">${DAYS.map(([k, l]) => `<span class="day-chip ${days.includes(k) ? 'on' : ''}" data-day="${k}">${l}</span>`).join('')}</div></div>`;
       card.querySelector('[data-del]').addEventListener('click', () => { state.schedules = state.schedules.filter(x => x !== sc); markDirty(); render(); });
       card.querySelector('[data-name]').addEventListener('input', e => { sc.name = e.target.value; markDirty(); });
@@ -921,12 +926,12 @@ function initSchedules() {
   }
   render();
   document.getElementById('addSchedule').addEventListener('click', () => {
-    state.schedules.push({id: uid('schedule_'), name: 'Neuer Zeitplan', display_id: state.displays[0]?.id || 'default', playlist_id: state.playlists[0]?.id || 'playlist_default', from: '08:00', to: '17:00', days: ['mon', 'tue', 'wed', 'thu', 'fri']});
+    state.schedules.push({id: uid('schedule_'), name: sbT('schedule.new', 'Neuer Zeitplan'), display_id: state.displays[0]?.id || 'default', playlist_id: state.playlists[0]?.id || 'playlist_default', from: '08:00', to: '17:00', days: ['mon', 'tue', 'wed', 'thu', 'fri']});
     markDirty();
     render();
   });
   document.getElementById('saveSchedules').addEventListener('click', async () => {
-    try { await postJson('../api/schedules.php', {items: state.schedules}); clearDirty(); toast('Zeitpläne gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+    try { await postJson('../api/schedules.php', {items: state.schedules}); clearDirty(); toast(sbT('toast.schedules.saved', 'Zeitpläne gespeichert ✓')); } catch (e) { toast(e.message, 'err'); }
   });
 }
 
@@ -939,6 +944,7 @@ function initSettings() {
       branding: {name: form.branding_name.value.trim()},
       system: {
         timezone: form.timezone.value.trim(),
+        language: form.language.value,
         default_slide_duration: Number(form.default_slide_duration.value || 10),
         default_transition: form.default_transition.value,
         offline_timeout_minutes: Number(form.offline_timeout_minutes.value || 5),
@@ -946,7 +952,14 @@ function initSettings() {
       weather: {enabled: form.weather_enabled.checked, location: form.weather_location.value.trim()},
       maintenance: {enabled: form.maintenance_enabled.checked, message: form.maintenance_message.value.trim()},
     };
-    try { await postJson('../api/settings.php', payload); clearDirty(); toast('Einstellungen gespeichert ✓'); } catch (err) { toast(err.message, 'err'); }
+    // Sprachwechsel wirkt erst nach einem Neuladen (die Texte kommen vom Server).
+    const sprachwechsel = form.language.value !== ((APP.settings && APP.settings.system && APP.settings.system.language) || 'de');
+    try {
+      await postJson('../api/settings.php', payload);
+      clearDirty();
+      toast(sbT('toast.settings.saved', 'Einstellungen gespeichert ✓'));
+      if (sprachwechsel) setTimeout(() => location.reload(), 600);
+    } catch (err) { toast(err.message, 'err'); }
   });
   form.addEventListener('input', markDirty);
 
@@ -1087,7 +1100,7 @@ function initEditor() {
     const text = (e.clipboardData || window.clipboardData).getData('text/plain');
     if (!text) return;
     const rows = text.replace(/\r/g, '').split('\n').filter(l => l.length).map(l => l.split('\t'));
-    if (rows.length) { state.tableDraft = rows; tableNorm(); markDirty(); renderTableGrid(); toast('Tabelle aus Zwischenablage übernommen ✓'); }
+    if (rows.length) { state.tableDraft = rows; tableNorm(); markDirty(); renderTableGrid(); toast(sbT('toast.table.pasted', 'Tabelle aus Zwischenablage übernommen ✓')); }
     e.target.value = '';
   });
 
@@ -1100,11 +1113,11 @@ function initEditor() {
       let data = null;
       try { data = await res.json(); } catch (_) { /* keine JSON-Antwort (z. B. Proxy-413/PHP-Limit) */ }
       if (!res.ok || !data || !data.ok) {
-        throw new Error((data && data.error) ? data.error : ('Upload fehlgeschlagen (HTTP ' + res.status + '). Datei evtl. zu gross.'));
+        throw new Error((data && data.error) ? data.error : sbT('editor.upload.failed', 'Upload fehlgeschlagen (HTTP {status}). Datei evtl. zu gross.', {status: res.status}));
       }
       document.getElementById('mSrc').value = data.url;
       markDirty();
-      toast('Bild hochgeladen ✓');
+      toast(sbT('toast.image.uploaded', 'Bild hochgeladen ✓'));
     } catch (err) { toast(err.message, 'err'); }
     e.target.value = '';
   });
@@ -1122,13 +1135,13 @@ function initEditor() {
         let data = null;
         try { data = await res.json(); } catch (_) { /* keine JSON-Antwort */ }
         if (!res.ok || !data || !data.ok) {
-          throw new Error((data && data.error) ? data.error : ('Upload fehlgeschlagen (HTTP ' + res.status + '). Datei evtl. zu gross.'));
+          throw new Error((data && data.error) ? data.error : sbT('editor.upload.failed', 'Upload fehlgeschlagen (HTTP {status}). Datei evtl. zu gross.', {status: res.status}));
         }
         ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + data.url;
         okCount++;
       } catch (err) { toast(err.message, 'err'); }
     }
-    if (okCount) { markDirty(); toast(okCount + (okCount === 1 ? ' Bild' : ' Bilder') + ' hochgeladen ✓'); }
+    if (okCount) { markDirty(); toast(okCount === 1 ? sbT('toast.images.uploaded.one', '{n} Bild hochgeladen ✓', {n: okCount}) : sbT('toast.images.uploaded.many', '{n} Bilder hochgeladen ✓', {n: okCount})); }
     e.target.value = '';
   });
 
@@ -1174,12 +1187,12 @@ async function saveSlides() {
     valid_from: s.valid_from || '', valid_until: s.valid_until || '',
     blocks: Array.isArray(s.blocks) ? s.blocks : [],
   }));
-  try { await postJson('../api/slides.php', {items}); clearDirty(); toast('Folien gespeichert ✓'); } catch (e) { toast(e.message, 'err'); }
+  try { await postJson('../api/slides.php', {items}); clearDirty(); toast(sbT('toast.slides.saved', 'Folien gespeichert ✓')); } catch (e) { toast(e.message, 'err'); }
 }
 
 async function openPreview() {
   const s = getSlide();
-  if (!s) { toast('Keine Folie ausgewählt.', 'err'); return; }
+  if (!s) { toast(sbT('editor.slide.none_selected', 'Keine Folie ausgewählt.'), 'err'); return; }
   try {
     await postJson('../api/preview.php', {slide: s});
     const frame = document.getElementById('previewFrame');

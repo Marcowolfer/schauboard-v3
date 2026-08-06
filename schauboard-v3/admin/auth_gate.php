@@ -2,11 +2,11 @@
 $version ??= schauboard_version();
 $authMode = !empty($needsSetup) ? 'setup' : 'login';
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="<?= htmlspecialchars(schauboard_language()) ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title><?= htmlspecialchars(($version['name'] ?? 'Schauboard') . ' ' . ($authMode === 'setup' ? 'Setup' : 'Login')) ?></title>
+<title><?= htmlspecialchars(($version['name'] ?? 'Schauboard') . ' ' . ($authMode === 'setup' ? t('auth.title.setup', 'Setup') : t('auth.title.login', 'Login'))) ?></title>
 <style>
 :root{
   --bg:#08111d;
@@ -39,29 +39,29 @@ button:hover{transform:translateY(-1px);filter:saturate(1.05);box-shadow:0 22px 
   <div class="badge"><?= htmlspecialchars($version['label'] ?? 'v3.0.0') ?></div>
   <div class="brand">Schauboard v3</div>
   <?php if ($authMode === 'setup'): ?>
-    <div class="subtitle">Beim ersten Start bitte ein Admin-Passwort festlegen. Das Passwort wird als Hash in einer Datei gespeichert.</div>
+    <div class="subtitle"><?= te('auth.setup.subtitle', 'Beim ersten Start bitte ein Admin-Passwort festlegen. Das Passwort wird als Hash in einer Datei gespeichert.') ?></div>
     <?php if (!empty($setupError)): ?><div class="error"><?= htmlspecialchars($setupError) ?></div><?php endif; ?>
     <form method="post" class="grid">
       <label>
-        Neues Passwort
-        <input type="password" name="setup_password" placeholder="Mindestens 8 Zeichen" autofocus>
+        <?= te('auth.setup.password', 'Neues Passwort') ?>
+        <input type="password" name="setup_password" placeholder="<?= te('auth.setup.password_placeholder', 'Mindestens 8 Zeichen') ?>" autofocus>
       </label>
       <label>
-        Passwort wiederholen
-        <input type="password" name="setup_password_confirm" placeholder="Passwort bestaetigen">
+        <?= te('auth.setup.password_repeat', 'Passwort wiederholen') ?>
+        <input type="password" name="setup_password_confirm" placeholder="<?= te('auth.setup.password_repeat_placeholder', 'Passwort bestaetigen') ?>">
       </label>
-      <button type="submit">Passwort setzen</button>
+      <button type="submit"><?= te('auth.setup.submit', 'Passwort setzen') ?></button>
     </form>
-    <div class="hint">Wenn die Passwortdatei geloescht wird, startet dieses Setup erneut.</div>
+    <div class="hint"><?= te('auth.setup.hint', 'Wenn die Passwortdatei geloescht wird, startet dieses Setup erneut.') ?></div>
   <?php else: ?>
-    <div class="subtitle">Mit dem Admin-Passwort anmelden, um den Editor zu oeffnen.</div>
-    <?php if (!empty($loginError)): ?><div class="error">Passwort ist nicht korrekt.</div><?php endif; ?>
+    <div class="subtitle"><?= te('auth.login.subtitle', 'Mit dem Admin-Passwort anmelden, um den Editor zu oeffnen.') ?></div>
+    <?php if (!empty($loginError)): ?><div class="error"><?= te('auth.login.error', 'Passwort ist nicht korrekt.') ?></div><?php endif; ?>
     <form method="post" class="grid">
       <label>
-        Passwort
-        <input type="password" name="login_password" placeholder="Passwort eingeben" autofocus>
+        <?= te('auth.login.password', 'Passwort') ?>
+        <input type="password" name="login_password" placeholder="<?= te('auth.login.password_placeholder', 'Passwort eingeben') ?>" autofocus>
       </label>
-      <button type="submit">Anmelden</button>
+      <button type="submit"><?= te('auth.login.submit', 'Anmelden') ?></button>
     </form>
   <?php endif; ?>
 </div>

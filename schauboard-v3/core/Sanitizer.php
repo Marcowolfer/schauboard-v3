@@ -99,7 +99,7 @@ function schauboard_sanitize_http_url($value): string
 function schauboard_sanitize_table($value): array
 {
     if (!is_array($value)) {
-        return [['Spalte 1', 'Spalte 2'], ['Wert', 'Wert']];
+        return [[t('block.table.column', 'Spalte {n}', ['n' => 1]), t('block.table.column', 'Spalte {n}', ['n' => 2])], [t('block.table.value', 'Wert'), t('block.table.value', 'Wert')]];
     }
 
     $rows = [];
@@ -116,7 +116,7 @@ function schauboard_sanitize_table($value): array
         }
     }
 
-    return $rows !== [] ? $rows : [['Spalte 1', 'Spalte 2'], ['Wert', 'Wert']];
+    return $rows !== [] ? $rows : [[t('block.table.column', 'Spalte {n}', ['n' => 1]), t('block.table.column', 'Spalte {n}', ['n' => 2])], [t('block.table.value', 'Wert'), t('block.table.value', 'Wert')]];
 }
 
 /**
@@ -260,7 +260,7 @@ function schauboard_sanitize_slide(array $slide): array
 
     return [
         'id' => schauboard_sanitize_id($slide['id'] ?? '', 'slide_' . uniqid()),
-        'name' => schauboard_sanitize_text($slide['name'] ?? 'Neue Slide'),
+        'name' => schauboard_sanitize_text($slide['name'] ?? t('api.default.slide', 'Neue Slide')),
         'bg_color' => schauboard_sanitize_color($slide['bg_color'] ?? '#1a1a2e'),
         'bg_image' => schauboard_sanitize_urlish($slide['bg_image'] ?? ''),
         'duration' => max(3, (int) ($slide['duration'] ?? 10)),
@@ -282,7 +282,7 @@ function schauboard_sanitize_playlist(array $playlist): array
 
     return [
         'id' => schauboard_sanitize_id($playlist['id'] ?? '', 'playlist_' . uniqid()),
-        'name' => schauboard_sanitize_text($playlist['name'] ?? 'Neue Playlist'),
+        'name' => schauboard_sanitize_text($playlist['name'] ?? t('playlist.new', 'Neue Playlist')),
         'slide_ids' => array_values(array_unique($slideIds)),
     ];
 }
@@ -291,7 +291,7 @@ function schauboard_sanitize_display(array $display): array
 {
     return [
         'id' => schauboard_sanitize_id($display['id'] ?? '', 'display_' . uniqid()),
-        'name' => schauboard_sanitize_text($display['name'] ?? 'Neues Display'),
+        'name' => schauboard_sanitize_text($display['name'] ?? t('api.default.display', 'Neues Display')),
         'default_playlist_id' => schauboard_sanitize_id($display['default_playlist_id'] ?? '', 'playlist_default'),
         'last_seen_at' => is_scalar($display['last_seen_at'] ?? null) ? (string) $display['last_seen_at'] : null,
         'token' => schauboard_sanitize_text($display['token'] ?? ''),
@@ -341,7 +341,7 @@ function schauboard_sanitize_schedule(array $schedule): array
 {
     return [
         'id' => schauboard_sanitize_id($schedule['id'] ?? '', 'schedule_' . uniqid()),
-        'name' => schauboard_sanitize_text($schedule['name'] ?? 'Neue Zeitsteuerung'),
+        'name' => schauboard_sanitize_text($schedule['name'] ?? t('api.default.schedule', 'Neue Zeitsteuerung')),
         'display_id' => schauboard_sanitize_id($schedule['display_id'] ?? '', 'default'),
         'playlist_id' => schauboard_sanitize_id($schedule['playlist_id'] ?? '', 'playlist_default'),
         'days' => schauboard_sanitize_days($schedule['days'] ?? []),

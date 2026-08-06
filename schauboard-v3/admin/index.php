@@ -20,13 +20,13 @@ if ($needsSetup && isset($_POST['setup_password'])) {
     $confirm = (string) ($_POST['setup_password_confirm'] ?? '');
 
     if (strlen($password) < 8) {
-        $setupError = 'Das Passwort muss mindestens 8 Zeichen lang sein.';
+        $setupError = t('auth.setup.error_short', 'Das Passwort muss mindestens 8 Zeichen lang sein.');
     } elseif ($password !== $confirm) {
-        $setupError = 'Die beiden Passwoerter stimmen nicht ueberein.';
+        $setupError = t('auth.setup.error_mismatch', 'Die beiden Passwoerter stimmen nicht ueberein.');
     } else {
         $hash = password_hash($password, PASSWORD_DEFAULT);
         if (!$hash || !schauboard_store_password_hash($hash)) {
-            $setupError = 'Die Passwortdatei konnte nicht gespeichert werden.';
+            $setupError = t('auth.setup.error_store', 'Die Passwortdatei konnte nicht gespeichert werden.');
         } else {
             session_regenerate_id(true); // gegen Session-Fixation
             $_SESSION['schauboard_admin_auth'] = true;
@@ -65,18 +65,18 @@ $schedules = schauboard_read_dataset('schedules');
 $heartbeats = schauboard_read_json_file(dirname(__DIR__) . '/data/heartbeats.json', []);
 
 $sectionTitles = [
-    'editor' => 'Folien',
-    'playlists' => 'Playlists',
-    'displays' => 'Displays',
-    'schedules' => 'Zeitpläne',
-    'settings' => 'Einstellungen',
+    'editor' => t('admin.nav.editor', 'Folien'),
+    'playlists' => t('admin.nav.playlists', 'Playlists'),
+    'displays' => t('admin.nav.displays', 'Displays'),
+    'schedules' => t('admin.nav.schedules', 'Zeitpläne'),
+    'settings' => t('admin.nav.settings', 'Einstellungen'),
 ];
 $sectionHints = [
-    'editor' => 'Folien gestalten: Block auf die Bühne ziehen, anklicken zum Bearbeiten, ziehen zum Verschieben.',
-    'playlists' => 'Folien zu Playlists bündeln. Ein Display zeigt immer eine Playlist.',
-    'displays' => 'Deine Bildschirme: Name vergeben, URL öffnen, Playlist zuweisen – fertig.',
-    'schedules' => 'Optional: zu bestimmten Zeiten automatisch eine andere Playlist zeigen.',
-    'settings' => 'Globale Einstellungen, Branding und Wartungsmodus.',
+    'editor' => t('admin.hint.editor', 'Folien gestalten: Block auf die Bühne ziehen, anklicken zum Bearbeiten, ziehen zum Verschieben.'),
+    'playlists' => t('admin.hint.playlists', 'Folien zu Playlists bündeln. Ein Display zeigt immer eine Playlist.'),
+    'displays' => t('admin.hint.displays', 'Deine Bildschirme: Name vergeben, URL öffnen, Playlist zuweisen – fertig.'),
+    'schedules' => t('admin.hint.schedules', 'Optional: zu bestimmten Zeiten automatisch eine andere Playlist zeigen.'),
+    'settings' => t('admin.hint.settings', 'Globale Einstellungen, Branding und Wartungsmodus.'),
 ];
 
 // "Heute" in der Settings-Zeitzone: massgeblich fuer die Gueltigkeits-Badges im
@@ -100,7 +100,7 @@ $jsState = [
     'templates' => schauboard_read_dataset('templates'),
 ];
 ?><!DOCTYPE html>
-<html lang="de">
+<html lang="<?= htmlspecialchars(schauboard_language()) ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -327,8 +327,8 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <span class="badge"><?= htmlspecialchars($version['label'] ?? 'v3.0.0') ?></span>
     </div>
     <div class="actions">
-      <a class="btn" href="../?display=default" target="_blank" rel="noreferrer">▶ Display ansehen</a>
-      <form method="post" style="margin:0"><button type="submit" class="btn" name="logout" value="1">Abmelden</button></form>
+      <a class="btn" href="../?display=default" target="_blank" rel="noreferrer"><?= te('admin.view_display', '▶ Display ansehen') ?></a>
+      <form method="post" style="margin:0"><button type="submit" class="btn" name="logout" value="1"><?= te('common.logout', 'Abmelden') ?></button></form>
     </div>
   </header>
   <div id="updateBanner" class="update-banner" hidden>
@@ -336,17 +336,17 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <span class="ub-icon">⬆️</span>
       <span class="ub-text"></span>
       <span class="ub-actions">
-        <button type="button" class="btn small primary" id="ubApply" hidden>⬆️ Jetzt aktualisieren</button>
-        <a class="btn small" id="ubDownload" target="_blank" rel="noreferrer" hidden>⬇ Herunterladen</a>
-        <button type="button" class="btn small" id="ubHowtoBtn">📋 Anleitung</button>
-        <button type="button" class="btn small" id="ubDismiss" title="Diese Version ausblenden">✕</button>
+        <button type="button" class="btn small primary" id="ubApply" hidden><?= te('update.apply', '⬆️ Jetzt aktualisieren') ?></button>
+        <a class="btn small" id="ubDownload" target="_blank" rel="noreferrer" hidden><?= te('update.download', '⬇ Herunterladen') ?></a>
+        <button type="button" class="btn small" id="ubHowtoBtn"><?= te('update.howto', '📋 Anleitung') ?></button>
+        <button type="button" class="btn small" id="ubDismiss" title="<?= te('update.dismiss_title', 'Diese Version ausblenden') ?>">✕</button>
       </span>
     </div>
     <div class="ub-howto" id="ubHowtoPanel" hidden>
       <ol>
-        <li>ZIP herunterladen und entpacken.</li>
-        <li>Alle Dateien <strong>außer</strong> <code>data/</code>, <code>uploads/</code> und <code>config.local.php</code> in deinen Schauboard-Ordner kopieren und die vorhandenen überschreiben.</li>
-        <li>Seite neu laden – deine Folien, Einstellungen und Bilder bleiben erhalten.</li>
+        <li><?= te('update.step1', 'ZIP herunterladen und entpacken.') ?></li>
+        <li><?= t('update.step2', 'Alle Dateien <strong>außer</strong> <code>data/</code>, <code>uploads/</code> und <code>config.local.php</code> in deinen Schauboard-Ordner kopieren und die vorhandenen überschreiben.') ?></li>
+        <li><?= te('update.step3', 'Seite neu laden – deine Folien, Einstellungen und Bilder bleiben erhalten.') ?></li>
       </ol>
     </div>
   </div>
@@ -368,19 +368,19 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
         </div>
         <div class="row">
           <?php if ($section === 'editor'): ?>
-            <button type="button" class="btn" id="previewSlide">👁 Vorschau</button>
-            <button type="button" class="btn primary" id="saveSlides">💾 Speichern</button>
+            <button type="button" class="btn" id="previewSlide"><?= te('editor.preview', '👁 Vorschau') ?></button>
+            <button type="button" class="btn primary" id="saveSlides"><?= te('common.save', '💾 Speichern') ?></button>
           <?php elseif ($section === 'playlists'): ?>
-            <button type="button" class="btn" id="addPlaylist">+ Playlist</button>
-            <button type="button" class="btn primary" id="savePlaylists">💾 Speichern</button>
+            <button type="button" class="btn" id="addPlaylist"><?= te('playlist.add', '+ Playlist') ?></button>
+            <button type="button" class="btn primary" id="savePlaylists"><?= te('common.save', '💾 Speichern') ?></button>
           <?php elseif ($section === 'displays'): ?>
-            <button type="button" class="btn" id="addDisplay">+ Display</button>
-            <button type="button" class="btn primary" id="saveDisplays">💾 Speichern</button>
+            <button type="button" class="btn" id="addDisplay"><?= te('display.add', '+ Display') ?></button>
+            <button type="button" class="btn primary" id="saveDisplays"><?= te('common.save', '💾 Speichern') ?></button>
           <?php elseif ($section === 'schedules'): ?>
-            <button type="button" class="btn" id="addSchedule">+ Zeitplan</button>
-            <button type="button" class="btn primary" id="saveSchedules">💾 Speichern</button>
+            <button type="button" class="btn" id="addSchedule"><?= te('schedule.add', '+ Zeitplan') ?></button>
+            <button type="button" class="btn primary" id="saveSchedules"><?= te('common.save', '💾 Speichern') ?></button>
           <?php elseif ($section === 'settings'): ?>
-            <button type="button" class="btn primary" id="saveSettingsTop">💾 Speichern</button>
+            <button type="button" class="btn primary" id="saveSettingsTop"><?= te('common.save', '💾 Speichern') ?></button>
           <?php endif; ?>
         </div>
       </div>
@@ -391,23 +391,23 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
             <aside class="editor-sidebar">
               <div class="editor-side-cols">
                 <section class="editor-side-section es-slides">
-                  <h4>Folien</h4>
+                  <h4><?= te('editor.slides', 'Folien') ?></h4>
                   <div id="slidesList" class="editor-side-list"></div>
-                  <button type="button" class="btn small" id="addSlide" style="width:100%;margin-top:10px;">+ Folie</button>
+                  <button type="button" class="btn small" id="addSlide" style="width:100%;margin-top:10px;"><?= te('editor.add_slide', '+ Folie') ?></button>
                 </section>
                 <section class="editor-side-section es-layers">
-                  <h4>Ebenen</h4>
+                  <h4><?= te('editor.layers', 'Ebenen') ?></h4>
                   <div id="blockList" class="editor-side-list"></div>
                 </section>
               </div>
               <details class="editor-side-templates" open>
-                <summary>Vorlagen</summary>
+                <summary><?= te('editor.templates', 'Vorlagen') ?></summary>
                 <div class="es-tpl-body">
                   <div id="templateList" class="editor-side-list"></div>
-                  <button type="button" class="btn small" id="saveAsTemplate" style="width:100%;margin-top:10px;">★ Folie als Vorlage</button>
+                  <button type="button" class="btn small" id="saveAsTemplate" style="width:100%;margin-top:10px;"><?= te('editor.save_as_template', '★ Folie als Vorlage') ?></button>
                   <div class="row" style="margin-top:8px;gap:6px;">
-                    <button type="button" class="btn small" id="exportSlideBtn" style="flex:1;">📤 Export</button>
-                    <button type="button" class="btn small" id="importSlideBtn" style="flex:1;">📥 Import</button>
+                    <button type="button" class="btn small" id="exportSlideBtn" style="flex:1;"><?= te('editor.export_slide', '📤 Export') ?></button>
+                    <button type="button" class="btn small" id="importSlideBtn" style="flex:1;"><?= te('editor.import_slide', '📥 Import') ?></button>
                   </div>
                   <input type="file" id="importSlideInput" accept="application/json,.json" hidden>
                 </div>
@@ -418,25 +418,25 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
                 <div class="tool-palette" id="toolPalette"></div>
                 <div class="toolbar-sep"></div>
                 <div class="toolbar-group">
-                  <label>Name <input type="text" id="slideName" placeholder="Folienname"></label>
-                  <label>Dauer <input type="number" min="2" max="600" id="slideDuration">s</label>
+                  <label><?= te('editor.field.name', 'Name') ?> <input type="text" id="slideName" placeholder="<?= te('editor.field.name_placeholder', 'Folienname') ?>"></label>
+                  <label><?= te('editor.field.duration', 'Dauer') ?> <input type="number" min="2" max="600" id="slideDuration">s</label>
                 </div>
               </div>
               <div class="editor-stage-wrap">
                 <div id="studioCanvas" class="studio-canvas"></div>
               </div>
               <div class="editor-bottombar">
-                <div class="muted" id="editorMeta">Noch keine Folie ausgewählt.</div>
+                <div class="muted" id="editorMeta"><?= te('editor.no_slide', 'Noch keine Folie ausgewählt.') ?></div>
                 <details>
-                  <summary class="muted" style="cursor:pointer;">Folie anpassen</summary>
+                  <summary class="muted" style="cursor:pointer;"><?= te('editor.slide_settings', 'Folie anpassen') ?></summary>
                   <div class="row" style="margin-top:10px;">
                     <label class="field">ID<input type="text" id="slideId"></label>
-                    <label class="field">Hintergrundfarbe<span class="color-row"><input type="color" id="slideBgColorPick" aria-label="Farbe wählen"><input type="text" id="slideBgColor" placeholder="#1a1a2e"></span></label>
-                    <label class="field">Hintergrundbild (URL)<input type="text" id="slideBgImage" placeholder="optional"></label>
-                    <label class="field">Gültig von<input type="date" id="slideValidFrom" title="Leer = ab sofort"></label>
-                    <label class="field">Gültig bis<input type="date" id="slideValidUntil" title="Leer = unbegrenzt"></label>
+                    <label class="field"><?= te('editor.slide.bg_color', 'Hintergrundfarbe') ?><span class="color-row"><input type="color" id="slideBgColorPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="slideBgColor" placeholder="#1a1a2e"></span></label>
+                    <label class="field"><?= te('editor.slide.bg_image', 'Hintergrundbild (URL)') ?><input type="text" id="slideBgImage" placeholder="<?= te('common.optional', 'optional') ?>"></label>
+                    <label class="field"><?= te('editor.slide.valid_from', 'Gültig von') ?><input type="date" id="slideValidFrom" title="<?= te('editor.slide.valid_from_hint', 'Leer = ab sofort') ?>"></label>
+                    <label class="field"><?= te('editor.slide.valid_until', 'Gültig bis') ?><input type="date" id="slideValidUntil" title="<?= te('editor.slide.valid_until_hint', 'Leer = unbegrenzt') ?>"></label>
                   </div>
-                  <div class="muted" style="margin-top:8px;">Gültigkeit: Ausserhalb des Zeitraums überspringt das Display die Folie automatisch (z. B. für Ferien oder Aktionen). Leer = immer sichtbar.</div>
+                  <div class="muted" style="margin-top:8px;"><?= te('editor.slide.validity_hint', 'Gültigkeit: Ausserhalb des Zeitraums überspringt das Display die Folie automatisch (z. B. für Ferien oder Aktionen). Leer = immer sichtbar.') ?></div>
                 </details>
               </div>
             </section>
@@ -445,33 +445,40 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <?php elseif ($section === 'settings'): ?>
         <section class="card">
           <form id="settingsForm" class="form-grid">
-            <label class="field">Produktname<input type="text" name="branding_name" value="<?= htmlspecialchars($settings['branding']['name'] ?? 'Schauboard') ?>"></label>
-            <label class="field">Zeitzone<input type="text" name="timezone" value="<?= htmlspecialchars($settings['system']['timezone'] ?? 'Europe/Zurich') ?>"></label>
-            <label class="field">Standard-Dauer pro Folie (s)<input type="number" min="2" max="600" name="default_slide_duration" value="<?= (int) ($settings['system']['default_slide_duration'] ?? 10) ?>"></label>
-            <label class="field">Standard-Übergang
+            <label class="field"><?= te('settings.product_name', 'Produktname') ?><input type="text" name="branding_name" value="<?= htmlspecialchars($settings['branding']['name'] ?? 'Schauboard') ?>"></label>
+            <label class="field"><?= te('settings.timezone', 'Zeitzone') ?><input type="text" name="timezone" value="<?= htmlspecialchars($settings['system']['timezone'] ?? 'Europe/Zurich') ?>"></label>
+            <label class="field">Sprache / Language
+              <select name="language">
+                <?php foreach (schauboard_available_languages() as $code => $label): ?>
+                  <option value="<?= htmlspecialchars($code) ?>" <?= (($settings['system']['language'] ?? 'de') === $code) ? 'selected' : '' ?>><?= htmlspecialchars($label) ?></option>
+                <?php endforeach; ?>
+              </select>
+            </label>
+            <label class="field"><?= te('settings.default_duration', 'Standard-Dauer pro Folie (s)') ?><input type="number" min="2" max="600" name="default_slide_duration" value="<?= (int) ($settings['system']['default_slide_duration'] ?? 10) ?>"></label>
+            <label class="field"><?= te('settings.default_transition', 'Standard-Übergang') ?>
               <select name="default_transition">
-                <?php foreach (['fade' => 'Überblenden', 'slide-left' => 'Schieben (links)', 'slide-up' => 'Schieben (hoch)', 'zoom' => 'Zoom', 'none' => 'Ohne'] as $val => $lbl): ?>
+                <?php foreach (['fade' => t('settings.transition.fade', 'Überblenden'), 'slide-left' => t('settings.transition.slide_left', 'Schieben (links)'), 'slide-up' => t('settings.transition.slide_up', 'Schieben (hoch)'), 'zoom' => t('settings.transition.zoom', 'Zoom'), 'none' => t('settings.transition.none', 'Ohne')] as $val => $lbl): ?>
                   <option value="<?= $val ?>" <?= (($settings['system']['default_transition'] ?? 'fade') === $val) ? 'selected' : '' ?>><?= htmlspecialchars($lbl) ?></option>
                 <?php endforeach; ?>
               </select>
             </label>
-            <label class="field">Offline-Schwelle (Min.)<input type="number" min="1" max="120" name="offline_timeout_minutes" value="<?= (int) ($settings['system']['offline_timeout_minutes'] ?? 5) ?>"></label>
-            <label class="field">Wetter-Standardort<input type="text" name="weather_location" value="<?= htmlspecialchars($settings['weather']['location'] ?? 'Zurich,CH') ?>"></label>
-            <label class="checkbox full"><input type="checkbox" name="weather_enabled" <?= !empty($settings['weather']['enabled']) ? 'checked' : '' ?>> Wetter-Module aktivieren</label>
-            <label class="checkbox full"><input type="checkbox" name="maintenance_enabled" <?= !empty($settings['maintenance']['enabled']) ? 'checked' : '' ?>> Wartungsmodus (zeigt allen Displays einen Hinweis)</label>
-            <label class="field full">Wartungsmeldung<textarea name="maintenance_message"><?= htmlspecialchars($settings['maintenance']['message'] ?? '') ?></textarea></label>
+            <label class="field"><?= te('settings.offline_threshold', 'Offline-Schwelle (Min.)') ?><input type="number" min="1" max="120" name="offline_timeout_minutes" value="<?= (int) ($settings['system']['offline_timeout_minutes'] ?? 5) ?>"></label>
+            <label class="field"><?= te('settings.weather_location', 'Wetter-Standardort') ?><input type="text" name="weather_location" value="<?= htmlspecialchars($settings['weather']['location'] ?? 'Zurich,CH') ?>"></label>
+            <label class="checkbox full"><input type="checkbox" name="weather_enabled" <?= !empty($settings['weather']['enabled']) ? 'checked' : '' ?>> <?= te('settings.weather_enabled', 'Wetter-Module aktivieren') ?></label>
+            <label class="checkbox full"><input type="checkbox" name="maintenance_enabled" <?= !empty($settings['maintenance']['enabled']) ? 'checked' : '' ?>> <?= te('settings.maintenance_enabled', 'Wartungsmodus (zeigt allen Displays einen Hinweis)') ?></label>
+            <label class="field full"><?= te('settings.maintenance_message', 'Wartungsmeldung') ?><textarea name="maintenance_message"><?= htmlspecialchars($settings['maintenance']['message'] ?? '') ?></textarea></label>
             <div class="full row spread">
-              <span class="muted">Speichert nach <code>data/settings.json</code></span>
-              <button type="submit" class="btn primary">💾 Einstellungen speichern</button>
+              <span class="muted"><?= te('settings.saves_to', 'Speichert nach') ?> <code>data/settings.json</code></span>
+              <button type="submit" class="btn primary"><?= te('settings.save', '💾 Einstellungen speichern') ?></button>
             </div>
           </form>
         </section>
         <section class="card" style="margin-top:18px;">
-          <h3 style="margin:0 0 6px;">Sichern &amp; Umzug</h3>
-          <p class="muted" style="margin:0 0 14px;">Alle Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen) in eine Datei sichern – ideal als Backup oder für den Umzug auf eine neue Installation.</p>
+          <h3 style="margin:0 0 6px;"><?= te('settings.backup.title', 'Sichern & Umzug') ?></h3>
+          <p class="muted" style="margin:0 0 14px;"><?= te('settings.backup.hint', 'Alle Inhalte (Folien, Playlists, Displays, Zeitpläne, Einstellungen, Vorlagen) in eine Datei sichern – ideal als Backup oder für den Umzug auf eine neue Installation.') ?></p>
           <div class="row">
-            <button type="button" class="btn" id="exportBackupBtn">⬇ Komplett-Backup exportieren</button>
-            <button type="button" class="btn danger" id="importBackupBtn">⬆ Backup importieren …</button>
+            <button type="button" class="btn" id="exportBackupBtn"><?= te('settings.backup.export', '⬇ Komplett-Backup exportieren') ?></button>
+            <button type="button" class="btn danger" id="importBackupBtn"><?= te('settings.backup.import', '⬆ Backup importieren …') ?></button>
             <input type="file" id="importBackupInput" accept="application/json,.json" hidden>
           </div>
         </section>
@@ -489,104 +496,104 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 <div id="blockModal" class="modal-backdrop">
   <div class="modal-card">
     <div class="modal-head">
-      <div><h4 id="modalTitle">Block bearbeiten</h4><div class="muted" id="modalSub"></div></div>
-      <button type="button" class="btn" id="closeModal">Schliessen</button>
+      <div><h4 id="modalTitle"><?= te('modal.title.default', 'Block bearbeiten') ?></h4><div class="muted" id="modalSub"></div></div>
+      <button type="button" class="btn" id="closeModal"><?= te('common.close', 'Schliessen') ?></button>
     </div>
     <div class="form-grid">
-      <label class="field" data-f="type">Typ
+      <label class="field" data-f="type"><?= te('modal.type', 'Typ') ?>
         <select id="mType"></select>
       </label>
-      <label class="field full" data-f="text">Inhalt<textarea id="mText"></textarea></label>
-      <label class="field" data-f="src">Bild-/Video-URL / Pfad
+      <label class="field full" data-f="text"><?= te('modal.content', 'Inhalt') ?><textarea id="mText"></textarea></label>
+      <label class="field" data-f="src"><?= te('modal.src', 'Bild-/Video-URL / Pfad') ?>
         <input type="text" id="mSrc">
       </label>
-      <label class="field" data-f="upload">Bild/Video hochladen
+      <label class="field" data-f="upload"><?= te('modal.upload', 'Bild/Video hochladen') ?>
         <input type="file" id="mUpload" accept="image/*,video/*">
       </label>
-      <label class="field" data-f="fit">Darstellung
-        <select id="mFit"><option value="cover">Füllen (cover)</option><option value="contain">Einpassen (contain)</option><option value="fill">Strecken</option></select>
+      <label class="field" data-f="fit"><?= te('modal.fit', 'Darstellung') ?>
+        <select id="mFit"><option value="cover"><?= te('modal.fit.cover', 'Füllen (cover)') ?></option><option value="contain"><?= te('modal.fit.contain', 'Einpassen (contain)') ?></option><option value="fill"><?= te('modal.fit.fill', 'Strecken') ?></option></select>
       </label>
-      <label class="field" data-f="shape_kind">Form
-        <select id="mShapeKind"><option value="rect">Rechteck</option><option value="ellipse">Ellipse / Kreis</option></select>
+      <label class="field" data-f="shape_kind"><?= te('modal.shape_kind', 'Form') ?>
+        <select id="mShapeKind"><option value="rect"><?= te('modal.shape.rect', 'Rechteck') ?></option><option value="ellipse"><?= te('modal.shape.ellipse', 'Ellipse / Kreis') ?></option></select>
       </label>
-      <label class="field" data-f="opacity">Deckkraft (%)<input type="number" id="mOpacity" min="5" max="100"></label>
-      <label class="field" data-f="radius">Ecken-Radius (nur Rechteck)<input type="number" id="mRadius" min="0" max="400"></label>
+      <label class="field" data-f="opacity"><?= te('modal.opacity', 'Deckkraft (%)') ?><input type="number" id="mOpacity" min="5" max="100"></label>
+      <label class="field" data-f="radius"><?= te('modal.radius', 'Ecken-Radius (nur Rechteck)') ?><input type="number" id="mRadius" min="0" max="400"></label>
       <div class="full" data-f="gallery" style="display:grid;gap:10px;">
-        <label class="field">Bilder der Diashow – ein Bild (URL/Pfad) pro Zeile, Reihenfolge = Abspielreihenfolge
+        <label class="field"><?= te('modal.gallery.list', 'Bilder der Diashow – ein Bild (URL/Pfad) pro Zeile, Reihenfolge = Abspielreihenfolge') ?>
           <textarea id="mGalleryList" style="min-height:110px;font-family:Consolas,monospace;font-size:12px;" placeholder="uploads/bild1.jpg&#10;uploads/bild2.jpg&#10;https://…"></textarea>
         </label>
         <div class="form-grid">
-          <label class="field">Bilder hochladen (mehrere möglich)
+          <label class="field"><?= te('modal.gallery.upload', 'Bilder hochladen (mehrere möglich)') ?>
             <input type="file" id="mGalleryUpload" accept="image/*" multiple>
           </label>
-          <label class="field">Wechsel alle … Sekunden<input type="number" id="mGalleryInterval" min="2" max="120"></label>
+          <label class="field"><?= te('modal.gallery.interval', 'Wechsel alle … Sekunden') ?><input type="number" id="mGalleryInterval" min="2" max="120"></label>
         </div>
       </div>
-      <label class="field" data-f="city">Ort<input type="text" id="mCity"></label>
-      <label class="checkbox" data-f="forecast"><input type="checkbox" id="mForecast"> 3-Tage-Vorschau anzeigen</label>
-      <label class="field" data-f="rss_url">Feed-URL (RSS oder Atom)<input type="text" id="mRssUrl" placeholder="https://…/feed.xml"></label>
-      <label class="field" data-f="rss_count">Anzahl Meldungen (1–15)<input type="number" id="mRssCount" min="1" max="15"></label>
-      <label class="checkbox" data-f="rss_time"><input type="checkbox" id="mRssTime"> Zeit anzeigen (z. B. «vor 2 Std.»)</label>
-      <label class="checkbox" data-f="rss_source"><input type="checkbox" id="mRssSource"> Feed-Titel als Überschrift</label>
-      <label class="field" data-f="clock_format">Format
+      <label class="field" data-f="city"><?= te('modal.city', 'Ort') ?><input type="text" id="mCity"></label>
+      <label class="checkbox" data-f="forecast"><input type="checkbox" id="mForecast"> <?= te('modal.forecast', '3-Tage-Vorschau anzeigen') ?></label>
+      <label class="field" data-f="rss_url"><?= te('modal.rss_url', 'Feed-URL (RSS oder Atom)') ?><input type="text" id="mRssUrl" placeholder="https://…/feed.xml"></label>
+      <label class="field" data-f="rss_count"><?= te('modal.rss_count', 'Anzahl Meldungen (1–15)') ?><input type="number" id="mRssCount" min="1" max="15"></label>
+      <label class="checkbox" data-f="rss_time"><input type="checkbox" id="mRssTime"> <?= te('modal.rss_time', 'Zeit anzeigen (z. B. «vor 2 Std.»)') ?></label>
+      <label class="checkbox" data-f="rss_source"><input type="checkbox" id="mRssSource"> <?= te('modal.rss_source', 'Feed-Titel als Überschrift') ?></label>
+      <label class="field" data-f="clock_format"><?= te('modal.clock_format', 'Format') ?>
         <select id="mClockFormat"><option value="HH:MM">HH:MM</option><option value="HH:MM:SS">HH:MM:SS</option></select>
       </label>
-      <label class="checkbox" data-f="show_date"><input type="checkbox" id="mShowDate"> Datum anzeigen</label>
-      <label class="field" data-f="speed">Tempo (10–200)<input type="number" id="mSpeed" min="10" max="200"></label>
-      <label class="field" data-f="bg">Hintergrund<span class="color-row"><input type="color" id="mBgPick" aria-label="Farbe wählen"><input type="text" id="mBg"></span></label>
-      <label class="field" data-f="url">Webseiten-URL<input type="text" id="mUrl" placeholder="https://…"></label>
-      <label class="field" data-f="refresh_minutes">Neu laden alle … Min. (0 = nie)<input type="number" id="mRefresh" min="0" max="1440"></label>
-      <label class="field" data-f="zoom">Zoom (%)<input type="number" id="mZoom" min="25" max="200"></label>
-      <label class="field" data-f="data">QR-Inhalt (URL/Text)<input type="text" id="mData"></label>
-      <label class="field" data-f="qlabel">Beschriftung<input type="text" id="mQLabel"></label>
-      <label class="field" data-f="target">Zieltermin<input type="datetime-local" id="mTarget"></label>
-      <label class="field" data-f="clabel">Beschriftung<input type="text" id="mCLabel"></label>
-      <label class="field" data-f="font_size">Schriftgrösse<input type="number" id="mFont" min="10" max="400"></label>
-      <label class="field" data-f="color">Farbe<span class="color-row"><input type="color" id="mColorPick" aria-label="Farbe wählen"><input type="text" id="mColor"></span></label>
-      <label class="field" data-f="align">Ausrichtung
-        <select id="mAlign"><option value="left">Links</option><option value="center">Mitte</option><option value="right">Rechts</option></select>
+      <label class="checkbox" data-f="show_date"><input type="checkbox" id="mShowDate"> <?= te('modal.show_date', 'Datum anzeigen') ?></label>
+      <label class="field" data-f="speed"><?= te('modal.speed', 'Tempo (10–200)') ?><input type="number" id="mSpeed" min="10" max="200"></label>
+      <label class="field" data-f="bg"><?= te('modal.bg', 'Hintergrund') ?><span class="color-row"><input type="color" id="mBgPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mBg"></span></label>
+      <label class="field" data-f="url"><?= te('modal.url', 'Webseiten-URL') ?><input type="text" id="mUrl" placeholder="https://…"></label>
+      <label class="field" data-f="refresh_minutes"><?= te('modal.refresh_minutes', 'Neu laden alle … Min. (0 = nie)') ?><input type="number" id="mRefresh" min="0" max="1440"></label>
+      <label class="field" data-f="zoom"><?= te('modal.zoom', 'Zoom (%)') ?><input type="number" id="mZoom" min="25" max="200"></label>
+      <label class="field" data-f="data"><?= te('modal.qr_data', 'QR-Inhalt (URL/Text)') ?><input type="text" id="mData"></label>
+      <label class="field" data-f="qlabel"><?= te('modal.qr_label', 'Beschriftung') ?><input type="text" id="mQLabel"></label>
+      <label class="field" data-f="target"><?= te('modal.target', 'Zieltermin') ?><input type="datetime-local" id="mTarget"></label>
+      <label class="field" data-f="clabel"><?= te('modal.countdown_label', 'Beschriftung') ?><input type="text" id="mCLabel"></label>
+      <label class="field" data-f="font_size"><?= te('modal.font_size', 'Schriftgrösse') ?><input type="number" id="mFont" min="10" max="400"></label>
+      <label class="field" data-f="color"><?= te('modal.color', 'Farbe') ?><span class="color-row"><input type="color" id="mColorPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mColor"></span></label>
+      <label class="field" data-f="align"><?= te('modal.align', 'Ausrichtung') ?>
+        <select id="mAlign"><option value="left"><?= te('modal.align.left', 'Links') ?></option><option value="center"><?= te('modal.align.center', 'Mitte') ?></option><option value="right"><?= te('modal.align.right', 'Rechts') ?></option></select>
       </label>
-      <label class="checkbox" data-f="bold"><input type="checkbox" id="mBold"> Fett</label>
+      <label class="checkbox" data-f="bold"><input type="checkbox" id="mBold"> <?= te('modal.bold', 'Fett') ?></label>
 
       <div class="full table-editor" data-f="table">
         <div class="row spread">
-          <strong style="font-size:14px;">Tabelle</strong>
+          <strong style="font-size:14px;"><?= te('modal.table', 'Tabelle') ?></strong>
           <div class="row">
-            <button type="button" class="btn small" id="tblAddRow">+ Zeile</button>
-            <button type="button" class="btn small" id="tblAddCol">+ Spalte</button>
-            <button type="button" class="btn small" id="tblDelRow">− Zeile</button>
-            <button type="button" class="btn small" id="tblDelCol">− Spalte</button>
+            <button type="button" class="btn small" id="tblAddRow"><?= te('modal.table.add_row', '+ Zeile') ?></button>
+            <button type="button" class="btn small" id="tblAddCol"><?= te('modal.table.add_col', '+ Spalte') ?></button>
+            <button type="button" class="btn small" id="tblDelRow"><?= te('modal.table.del_row', '− Zeile') ?></button>
+            <button type="button" class="btn small" id="tblDelCol"><?= te('modal.table.del_col', '− Spalte') ?></button>
           </div>
         </div>
         <div id="tblGrid" class="table-grid"></div>
-        <label class="field">Aus Excel einfügen – hier hinein klicken und Strg+V
-          <textarea id="tblPaste" class="paste-zone" placeholder="Zellen in Excel markieren, kopieren, hier einfügen…"></textarea>
+        <label class="field"><?= te('modal.table.paste', 'Aus Excel einfügen – hier hinein klicken und Strg+V') ?>
+          <textarea id="tblPaste" class="paste-zone" placeholder="<?= te('modal.table.paste_placeholder', 'Zellen in Excel markieren, kopieren, hier einfügen…') ?>"></textarea>
         </label>
         <div class="form-grid">
-          <label class="field">Kopfzeile-Hintergrund<span class="color-row"><input type="color" id="mHeaderBgPick" aria-label="Farbe wählen"><input type="text" id="mHeaderBg"></span></label>
-          <label class="field">Kopfzeile-Farbe<span class="color-row"><input type="color" id="mHeaderColorPick" aria-label="Farbe wählen"><input type="text" id="mHeaderColor"></span></label>
-          <label class="field">Zellen-Farbe<span class="color-row"><input type="color" id="mCellColorPick" aria-label="Farbe wählen"><input type="text" id="mCellColor"></span></label>
-          <label class="field">Rahmen-Farbe<span class="color-row"><input type="color" id="mBorderColorPick" aria-label="Farbe wählen"><input type="text" id="mBorderColor"></span></label>
+          <label class="field"><?= te('modal.table.header_bg', 'Kopfzeile-Hintergrund') ?><span class="color-row"><input type="color" id="mHeaderBgPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mHeaderBg"></span></label>
+          <label class="field"><?= te('modal.table.header_color', 'Kopfzeile-Farbe') ?><span class="color-row"><input type="color" id="mHeaderColorPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mHeaderColor"></span></label>
+          <label class="field"><?= te('modal.table.cell_color', 'Zellen-Farbe') ?><span class="color-row"><input type="color" id="mCellColorPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mCellColor"></span></label>
+          <label class="field"><?= te('modal.table.border_color', 'Rahmen-Farbe') ?><span class="color-row"><input type="color" id="mBorderColorPick" aria-label="<?= te('common.pick_color', 'Farbe wählen') ?>"><input type="text" id="mBorderColor"></span></label>
         </div>
       </div>
 
-      <label class="field full" data-f="html">Animation – eigenes HTML/CSS (läuft isoliert in einer Sandbox)
-        <textarea id="mHtml" class="paste-zone" style="min-height:170px;font-family:Consolas,monospace;font-size:12px;" placeholder="HTML/CSS einfügen – Tipp: mit @keyframes animieren. Live-Vorschau über den „Vorschau“-Knopf bzw. auf dem Display."></textarea>
+      <label class="field full" data-f="html"><?= te('modal.html', 'Animation – eigenes HTML/CSS (läuft isoliert in einer Sandbox)') ?>
+        <textarea id="mHtml" class="paste-zone" style="min-height:170px;font-family:Consolas,monospace;font-size:12px;" placeholder="<?= te('modal.html_placeholder', 'HTML/CSS einfügen – Tipp: mit @keyframes animieren. Live-Vorschau über den „Vorschau“-Knopf bzw. auf dem Display.') ?>"></textarea>
       </label>
 
       <details class="full" data-f="advanced">
-        <summary class="muted" style="cursor:pointer;">Position & Grösse</summary>
+        <summary class="muted" style="cursor:pointer;"><?= te('modal.advanced', 'Position & Grösse') ?></summary>
         <div class="form-grid" style="margin-top:12px;">
           <label class="field">X<input type="number" id="mX" min="0" max="1900"></label>
           <label class="field">Y<input type="number" id="mY" min="0" max="1060"></label>
-          <label class="field">Breite<input type="number" id="mW" min="40" max="1920"></label>
-          <label class="field">Höhe<input type="number" id="mH" min="40" max="1080"></label>
+          <label class="field"><?= te('modal.width', 'Breite') ?><input type="number" id="mW" min="40" max="1920"></label>
+          <label class="field"><?= te('modal.height', 'Höhe') ?><input type="number" id="mH" min="40" max="1080"></label>
         </div>
       </details>
     </div>
     <div class="modal-actions">
-      <button type="button" class="btn danger" id="deleteBlock">Block entfernen</button>
-      <button type="button" class="btn primary" id="applyBlock">Übernehmen</button>
+      <button type="button" class="btn danger" id="deleteBlock"><?= te('modal.delete_block', 'Block entfernen') ?></button>
+      <button type="button" class="btn primary" id="applyBlock"><?= te('modal.apply', 'Übernehmen') ?></button>
     </div>
   </div>
 </div>
@@ -594,14 +601,15 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 <!-- Live-Vorschau -->
 <div id="previewOverlay" class="preview-overlay">
   <div class="row" style="width:min(1280px,92vw);justify-content:space-between;">
-    <strong>Live-Vorschau (aktuelle Folie)</strong>
-    <button type="button" class="btn" id="closePreview">✕ Schliessen</button>
+    <strong><?= te('editor.preview.title', 'Live-Vorschau (aktuelle Folie)') ?></strong>
+    <button type="button" class="btn" id="closePreview"><?= te('editor.preview.close', '✕ Schliessen') ?></button>
   </div>
-  <div class="preview-frame"><iframe id="previewFrame" title="Vorschau"></iframe></div>
+  <div class="preview-frame"><iframe id="previewFrame" title="<?= te('editor.preview.frame_title', 'Vorschau') ?>"></iframe></div>
 </div>
 
 <div class="toast-wrap" id="toastWrap"></div>
 
+<script>window.SB_LANG = <?= json_encode((object) schauboard_translations_for_js(), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;</script>
 <script src="../assets/blocks.js?v=<?= htmlspecialchars($version['current'] ?? '0') ?>"></script>
 <script>
 const APP = <?= json_encode($jsState, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES | JSON_HEX_TAG) ?>;
@@ -623,8 +631,8 @@ function toast(msg, kind) {
 async function postJson(url, payload) {
   const res = await fetch(url, {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload)});
   let data = null;
-  try { data = await res.json(); } catch (e) { throw new Error('Unerwartete Server-Antwort.'); }
-  if (!res.ok || !data || data.ok !== true) throw new Error(data && data.error ? data.error : 'Speichern fehlgeschlagen.');
+  try { data = await res.json(); } catch (e) { throw new Error(sbT('api.unexpected_response', 'Unerwartete Server-Antwort.')); }
+  if (!res.ok || !data || data.ok !== true) throw new Error(data && data.error ? data.error : sbT('common.save_failed', 'Speichern fehlgeschlagen.'));
   return data;
 }
 function esc(v) { return B.escapeHtml(v); }
@@ -684,9 +692,10 @@ if (SECTION === 'settings') initSettings();
       try { dismissed = localStorage.getItem('sb_update_dismissed') || ''; } catch (e) {}
       if (dismissed === info.latest) return;
 
-      txt.innerHTML = 'Update verfügbar: <strong>Schauboard v' + esc(info.latest) + '</strong>'
+      txt.innerHTML = sbT('update.available', 'Update verfügbar: <strong>Schauboard v{version}</strong>', {version: esc(info.latest)})
         + (info.notes ? ' – ' + esc(info.notes) : '')
-        + '<small>Deine Version: v' + esc(info.current) + (info.date ? ' · veröffentlicht ' + esc(info.date) : '') + '</small>';
+        + '<small>' + sbT('update.your_version', 'Deine Version: v{version}', {version: esc(info.current)})
+        + (info.date ? ' · ' + sbT('update.published', 'veröffentlicht {date}', {date: esc(info.date)}) : '') + '</small>';
 
       dismiss.addEventListener('click', () => {
         banner.hidden = true;
@@ -696,16 +705,16 @@ if (SECTION === 'settings') initSettings();
       if (info.can_auto_update) {
         apply.hidden = false;
         apply.addEventListener('click', async () => {
-          if (!confirm('Jetzt auf Schauboard v' + info.latest + ' aktualisieren?\n\nDie Programmdateien werden ersetzt. Deine Folien, Einstellungen und Bilder bleiben erhalten.')) return;
+          if (!confirm(sbT('update.confirm', 'Jetzt auf Schauboard v{version} aktualisieren?\n\nDie Programmdateien werden ersetzt. Deine Folien, Einstellungen und Bilder bleiben erhalten.', {version: info.latest}))) return;
           apply.disabled = true; howtoBtn.disabled = true; dismiss.disabled = true;
           const before = txt.innerHTML;
-          txt.innerHTML = '⏳ Update wird installiert … bitte dieses Fenster offen lassen.';
+          txt.innerHTML = sbT('update.installing', '⏳ Update wird installiert … bitte dieses Fenster offen lassen.');
           try {
             const res = await fetch('../api/update_apply.php', {method: 'POST', headers: {'Accept': 'application/json'}});
             const data = await res.json();
-            if (!data || !data.ok) throw new Error(data && data.error ? data.error : 'Update fehlgeschlagen.');
+            if (!data || !data.ok) throw new Error(data && data.error ? data.error : sbT('update.failed', 'Update fehlgeschlagen.'));
             apply.hidden = true;
-            txt.innerHTML = '✓ Erfolgreich auf <strong>v' + esc(data.version) + '</strong> aktualisiert – Seite lädt neu …';
+            txt.innerHTML = sbT('update.success', '✓ Erfolgreich auf <strong>v{version}</strong> aktualisiert – Seite lädt neu …', {version: esc(data.version)});
             setTimeout(() => location.reload(), 1800);
           } catch (e) {
             txt.innerHTML = before;
