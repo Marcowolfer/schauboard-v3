@@ -275,6 +275,20 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
 .modal-head h4{font-size:20px;letter-spacing:-.02em}
 .modal-actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 .field-hidden{display:none !important}
+/* Medienliste im Block-Dialog: Vorschaubilder statt Pfad-Textfeld.
+   Gemeinsam von Diashow (Bilder) und PDF-Block (Seiten) genutzt. */
+.media-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:9px;max-height:300px;overflow:auto;padding:3px;border:1px solid rgba(255,255,255,.08);border-radius:12px;background:rgba(0,0,0,.18)}
+.media-list:empty::after{content:attr(data-empty);grid-column:1/-1;display:block;padding:18px 10px;text-align:center;color:var(--muted);font-size:12px}
+.media-item{position:relative;aspect-ratio:4/3;border-radius:9px;overflow:hidden;border:1px solid rgba(255,255,255,.1);background:#0b1220;cursor:grab}
+.media-item.dragging{opacity:.4}
+.media-item.drop-before{box-shadow:inset 3px 0 0 0 var(--accent2)}
+.media-item.drop-after{box-shadow:inset -3px 0 0 0 var(--accent2)}
+.media-item img{width:100%;height:100%;object-fit:cover;display:block;-webkit-user-drag:none}
+.media-item .mi-num{position:absolute;left:4px;top:4px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:rgba(8,13,24,.82);color:#e7eefc;font-size:10px;font-weight:700;display:grid;place-items:center}
+.media-item .mi-del{position:absolute;right:3px;top:3px;width:20px;height:20px;border:none;border-radius:999px;background:rgba(8,13,24,.82);color:#ffd8df;font-size:11px;line-height:1;cursor:pointer;display:grid;place-items:center;padding:0}
+.media-item .mi-del:hover{background:rgba(255,142,161,.85);color:#1a0b0f}
+.media-progress{height:6px;border-radius:999px;background:rgba(255,255,255,.08);overflow:hidden}
+.media-progress>span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .2s ease}
 /* Farbfelder: natives Farbwaehler-Swatch neben dem Hex-Feld */
 .color-row{display:flex;gap:8px;align-items:center}
 .color-row input[type=color]{flex:0 0 46px;width:46px;min-height:38px;padding:3px;border-radius:11px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);cursor:pointer}
@@ -519,15 +533,30 @@ code{font-family:Consolas,monospace;background:rgba(255,255,255,.06);padding:2px
       <label class="field" data-f="opacity"><?= te('modal.opacity', 'Deckkraft (%)') ?><input type="number" id="mOpacity" min="5" max="100"></label>
       <label class="field" data-f="radius"><?= te('modal.radius', 'Ecken-Radius (nur Rechteck)') ?><input type="number" id="mRadius" min="0" max="400"></label>
       <div class="full" data-f="gallery" style="display:grid;gap:10px;">
-        <label class="field"><?= te('modal.gallery.list', 'Bilder der Diashow – ein Bild (URL/Pfad) pro Zeile, Reihenfolge = Abspielreihenfolge') ?>
-          <textarea id="mGalleryList" style="min-height:110px;font-family:Consolas,monospace;font-size:12px;" placeholder="uploads/bild1.jpg&#10;uploads/bild2.jpg&#10;https://…"></textarea>
-        </label>
+        <label class="field"><?= te('modal.gallery.list', 'Bilder der Diashow – ziehen zum Sortieren, Reihenfolge = Abspielreihenfolge') ?></label>
+        <div id="mGalleryItems" class="media-list" data-empty="<?= te('modal.gallery.empty', 'Noch keine Bilder – unten hochladen') ?>"></div>
         <div class="form-grid">
           <label class="field"><?= te('modal.gallery.upload', 'Bilder hochladen (mehrere möglich)') ?>
             <input type="file" id="mGalleryUpload" accept="image/*" multiple>
           </label>
           <label class="field"><?= te('modal.gallery.interval', 'Wechsel alle … Sekunden') ?><input type="number" id="mGalleryInterval" min="2" max="120"></label>
         </div>
+        <details>
+          <summary class="muted" style="cursor:pointer;"><?= te('modal.gallery.byurl', 'Bild per Adresse hinzufügen') ?></summary>
+          <div class="row" style="margin-top:8px;">
+            <input type="text" id="mGalleryUrl" placeholder="https://…" style="flex:1;">
+            <button type="button" class="btn small" id="mGalleryUrlAdd"><?= te('common.add', 'Hinzufügen') ?></button>
+          </div>
+        </details>
+      </div>
+      <div class="full" data-f="pdf" style="display:grid;gap:10px;">
+        <label class="field"><?= te('modal.pdf.file', 'PDF-Datei hochladen – die Seiten werden einzeln angezeigt') ?>
+          <input type="file" id="mPdfFile" accept="application/pdf">
+        </label>
+        <div id="mPdfStatus" class="muted" hidden></div>
+        <div id="mPdfProgress" class="media-progress" hidden><span></span></div>
+        <div id="mPdfItems" class="media-list" data-empty="<?= te('modal.pdf.empty', 'Noch keine Seiten – oben eine PDF-Datei wählen') ?>"></div>
+        <label class="field"><?= te('modal.pdf.interval', 'Seitenwechsel alle … Sekunden') ?><input type="number" id="mPdfInterval" min="2" max="300"></label>
       </div>
       <label class="field" data-f="city"><?= te('modal.city', 'Ort') ?><input type="text" id="mCity"></label>
       <label class="checkbox" data-f="forecast"><input type="checkbox" id="mForecast"> <?= te('modal.forecast', '3-Tage-Vorschau anzeigen') ?></label>

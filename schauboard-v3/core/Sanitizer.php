@@ -134,7 +134,7 @@ function schauboard_sanitize_date_string($value): string
 
 function schauboard_block_types(): array
 {
-    return ['text', 'heading', 'clock', 'image', 'gallery', 'shape', 'weather', 'rss', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
+    return ['text', 'heading', 'clock', 'image', 'gallery', 'pdf', 'shape', 'weather', 'rss', 'ticker', 'table', 'webpage', 'qrcode', 'countdown', 'animation', 'video'];
 }
 
 function schauboard_sanitize_block(array $block): array
@@ -187,6 +187,22 @@ function schauboard_sanitize_block(array $block): array
             $clean['images'] = $images;
             $clean['interval'] = max(2, min(120, (int) ($block['interval'] ?? 6)));
             $clean['fit'] = in_array(($block['fit'] ?? 'cover'), ['cover', 'contain', 'fill'], true) ? $block['fit'] : 'cover';
+            break;
+        case 'pdf':
+            $pages = [];
+            if (is_array($block['pages'] ?? null)) {
+                foreach (array_slice($block['pages'], 0, 100) as $pageSrc) {
+                    $src = schauboard_sanitize_urlish($pageSrc);
+                    if ($src !== '') {
+                        $pages[] = $src;
+                    }
+                }
+            }
+            $clean['pages'] = $pages;
+            $clean['interval'] = max(2, min(300, (int) ($block['interval'] ?? 10)));
+            $clean['fit'] = in_array(($block['fit'] ?? 'contain'), ['cover', 'contain', 'fill'], true) ? $block['fit'] : 'contain';
+            // Nur zur Anzeige im Editor ("welches PDF war das?")
+            $clean['source_name'] = schauboard_sanitize_text($block['source_name'] ?? '');
             break;
         case 'shape':
             // Fuellfarbe steckt im generischen color-Feld (oben bereits bereinigt).

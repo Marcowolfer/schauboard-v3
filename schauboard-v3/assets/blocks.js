@@ -40,6 +40,7 @@ window.SchauboardBlocks = (function () {
     clock:     {label: t('block.type.clock', 'Uhr'),         icon: '🕒', w: 360, h: 150},
     image:     {label: t('block.type.image', 'Bild'),        icon: '🖼️', w: 520, h: 360},
     gallery:   {label: t('block.type.gallery', 'Diashow'),   icon: '🎞️', w: 760, h: 480},
+    pdf:       {label: t('block.type.pdf', 'PDF'),           icon: '📄', w: 700, h: 950},
     shape:     {label: t('block.type.shape', 'Form'),        icon: '🟦', w: 600, h: 300},
     weather:   {label: t('block.type.weather', 'Wetter'),    icon: '⛅', w: 460, h: 360},
     rss:       {label: t('block.type.rss', 'RSS-Feed'),      icon: '📡', w: 760, h: 460},
@@ -84,6 +85,7 @@ window.SchauboardBlocks = (function () {
     if (type === 'clock') { base.clock_format = 'HH:MM'; base.show_date = false; }
     if (type === 'image') { base.src = ''; base.fit = 'cover'; }
     if (type === 'gallery') { base.images = []; base.interval = 6; base.fit = 'cover'; }
+    if (type === 'pdf') { base.pages = []; base.interval = 10; base.fit = 'contain'; base.source_name = ''; }
     if (type === 'shape') { base.kind = 'rect'; base.color = '#5f8cff'; base.opacity = 100; base.radius = 24; }
     if (type === 'weather') { base.city = ''; base.font_size = 40; base.show_forecast = false; } // leer = globalen Standardort aus den Einstellungen nutzen
     if (type === 'rss') { base.url = ''; base.count = 5; base.show_time = true; base.show_source = false; base.font_size = 36; }
@@ -192,11 +194,15 @@ window.SchauboardBlocks = (function () {
       return inner;
     }
 
-    if (type === 'gallery') {
+    if (type === 'gallery' || type === 'pdf') {
       inner.style.padding = '0';
-      var gImgs = Array.isArray(block.images) ? block.images.filter(Boolean) : [];
+      var istPdf = type === 'pdf';
+      var gImgs = (istPdf ? (Array.isArray(block.pages) ? block.pages : [])
+                          : (Array.isArray(block.images) ? block.images : [])).filter(Boolean);
       if (!gImgs.length) {
-        inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(t('block.gallery.empty', 'Diashow – Bilder im Editor hinzufügen')) + '</div>';
+        inner.innerHTML = '<div class="sb-block-empty">' + escapeHtml(istPdf
+          ? t('block.pdf.empty', 'PDF – im Editor eine PDF-Datei hochladen')
+          : t('block.gallery.empty', 'Diashow – Bilder im Editor hinzufügen')) + '</div>';
         return inner;
       }
       var gWrap = document.createElement('div');
@@ -205,21 +211,23 @@ window.SchauboardBlocks = (function () {
       // sonst wuerde jeder Canvas-Neuaufbau Timer ansammeln.
       if (mode === 'display') {
         gWrap.dataset.gallery = '1';
-        gWrap.dataset.interval = String(Math.max(2, num(block.interval, 6)));
+        gWrap.dataset.interval = String(Math.max(2, num(block.interval, istPdf ? 10 : 6)));
       }
       gImgs.forEach(function (src, gi) {
         var gImg = document.createElement('img');
         gImg.src = src;
         gImg.alt = '';
         gImg.draggable = false; // wie beim Bild-Block: nativen Drag verhindern
-        gImg.style.objectFit = block.fit || 'cover';
+        gImg.style.objectFit = block.fit || (istPdf ? 'contain' : 'cover');
         gImg.className = 'sb-g-img' + (gi === 0 ? ' on' : '');
         gWrap.appendChild(gImg);
       });
       if (mode === 'editor' && gImgs.length > 1) {
         var gBadge = document.createElement('div');
         gBadge.className = 'sb-g-badge';
-        gBadge.textContent = t('block.gallery.badge', '🎞️ {n} Bilder · {s}s', {n: gImgs.length, s: Math.max(2, num(block.interval, 6))});
+        gBadge.textContent = istPdf
+          ? t('block.pdf.badge', '📄 {n} Seiten · {s}s', {n: gImgs.length, s: Math.max(2, num(block.interval, 10))})
+          : t('block.gallery.badge', '🎞️ {n} Bilder · {s}s', {n: gImgs.length, s: Math.max(2, num(block.interval, 6))});
         gWrap.appendChild(gBadge);
       }
       inner.appendChild(gWrap);

@@ -44,6 +44,7 @@ return [
     'api.upload.dir_not_writable'                  => 'Upload folder is not writable.',
     'api.upload.failed'                            => 'Upload failed (code {code}).',
     'api.upload.no_file'                           => 'No file received.',
+    'api.upload.no_fileinfo'                       => 'The PHP extension "fileinfo" is missing on the server, so uploads are not possible.',
     'api.upload.save_failed'                       => 'The file could not be saved.',
     'api.upload.too_large'                         => 'File too large (max. {max}). Very large videos may need a higher upload_max_filesize/post_max_size in php.ini.',
     'api.upload.type_not_allowed'                  => 'Only images (JPG, PNG, GIF, WebP) or videos (MP4, WebM) are allowed.',
@@ -75,6 +76,8 @@ return [
     'block.gallery.empty'                          => 'Slideshow – add images in the editor',
     'block.heading.default'                        => 'Heading',
     'block.image.empty'                            => 'Image – set the source in the editor',
+    'block.pdf.badge'                              => '📄 {n} pages · {s}s',
+    'block.pdf.empty'                              => 'PDF – upload a file in the editor',
     'block.preview_live_hint'                      => 'Live preview on the display / via “Preview”',
     'block.qrcode.offline'                         => 'QR code not available offline',
     'block.rss.age.date'                           => '{d}/{m}',
@@ -99,6 +102,7 @@ return [
     'block.type.gallery'                           => 'Slideshow',
     'block.type.heading'                           => 'Heading',
     'block.type.image'                             => 'Image',
+    'block.type.pdf'                               => 'PDF',
     'block.type.qrcode'                            => 'QR code',
     'block.type.rss'                               => 'RSS feed',
     'block.type.shape'                             => 'Shape',
@@ -116,6 +120,7 @@ return [
     'block.webpage.preview_display_only'           => 'Live preview only on the display',
 
     // COMMON
+    'common.add'                                   => 'Add',
     'common.close'                                 => 'Close',
     'common.delete'                                => 'Delete',
     'common.inactive'                              => 'inactive',
@@ -214,6 +219,9 @@ return [
     'editor.templates.empty'                       => 'No templates',
     'editor.upload.failed'                         => 'Upload failed (HTTP {status}). The file may be too large.',
 
+    // MEDIA
+    'media.remove'                                 => 'Remove',
+
     // MODAL
     'modal.advanced'                               => 'Position & size',
     'modal.align'                                  => 'Alignment',
@@ -236,13 +244,18 @@ return [
     'modal.fit.fill'                               => 'Stretch',
     'modal.font_size'                              => 'Font size',
     'modal.forecast'                               => 'Show 3-day forecast',
+    'modal.gallery.byurl'                          => 'Add an image by address',
+    'modal.gallery.empty'                          => 'No images yet – upload below',
     'modal.gallery.interval'                       => 'Change every … seconds',
-    'modal.gallery.list'                           => 'Slideshow images – one image (URL/path) per line, order = playback order',
+    'modal.gallery.list'                           => 'Slideshow images – drag to reorder, order = playback order',
     'modal.gallery.upload'                         => 'Upload images (multiple allowed)',
     'modal.height'                                 => 'Height',
     'modal.html'                                   => 'Animation – your own HTML/CSS (runs isolated in a sandbox)',
     'modal.html_placeholder'                       => 'Paste HTML/CSS – tip: animate with @keyframes. Live preview via the “Preview” button or on the display.',
     'modal.opacity'                                => 'Opacity (%)',
+    'modal.pdf.empty'                              => 'No pages yet – choose a PDF file above',
+    'modal.pdf.file'                               => 'Upload a PDF – its pages are shown one after another',
+    'modal.pdf.interval'                           => 'Change page every … seconds',
     'modal.qr_data'                                => 'QR content (URL/text)',
     'modal.qr_label'                               => 'Label',
     'modal.radius'                                 => 'Corner radius (rectangle only)',
@@ -277,6 +290,13 @@ return [
     'modal.url'                                    => 'Web page URL',
     'modal.width'                                  => 'Width',
     'modal.zoom'                                   => 'Zoom (%)',
+
+    // PDF
+    'pdf.done'                                     => '{n} pages added – save with "Apply".',
+    'pdf.loading'                                  => 'Reading PDF …',
+    'pdf.not_a_pdf'                                => 'Please choose a PDF file.',
+    'pdf.render_failed'                            => 'Page {n} could not be converted.',
+    'pdf.rendering'                                => 'Converting page {n} of {total} …',
 
     // PLAYLIST
     'playlist.add'                                 => '+ Playlist',
@@ -317,7 +337,9 @@ return [
     'settings.backup.export_failed'                => 'Export failed.',
     'settings.backup.hint'                         => 'Save all content (slides, playlists, displays, schedules, settings, templates) to a single file – ideal as a backup or for moving to a new installation.',
     'settings.backup.import'                       => '⬆ Import backup …',
-    'settings.backup.import_confirm'               => "WARNING: The backup REPLACES all current content (slides, playlists, displays, schedules, settings, templates).\n\nContinue?",
+    'settings.backup.import_confirm'               => "WARNING: The backup REPLACES all current content (slides, playlists, displays, schedules, settings, templates).
+
+Continue?",
     'settings.backup.not_backup'                   => 'Not a Schauboard backup.',
     'settings.backup.title'                        => 'Backup & migration',
     'settings.default_duration'                    => 'Default duration per slide (s)',
@@ -344,6 +366,7 @@ return [
     'toast.image.uploaded'                         => 'Image uploaded ✓',
     'toast.images.uploaded.many'                   => '{n} images uploaded ✓',
     'toast.images.uploaded.one'                    => '{n} image uploaded ✓',
+    'toast.pdf.imported'                           => 'PDF imported: {n} pages ✓',
     'toast.playlists.saved'                        => 'Playlists saved ✓',
     'toast.schedules.saved'                        => 'Schedules saved ✓',
     'toast.settings.saved'                         => 'Settings saved ✓',
@@ -354,12 +377,15 @@ return [
     'toast.template.imported'                      => 'Template imported ✓',
     'toast.template.saved'                         => 'Saved as template ✓',
     'toast.template.slide_created'                 => 'Slide created from template ✓',
+    'toast.upload.failed'                          => 'Upload failed (HTTP {code}). The file may be too large.',
     'toast.url.copied'                             => 'URL copied ✓',
 
     // UPDATE
     'update.apply'                                 => '⬆️ Update now',
     'update.available'                             => 'Update available: <strong>Schauboard v{version}</strong>',
-    'update.confirm'                               => "Update to Schauboard v{version} now?\n\nThe program files will be replaced. Your slides, settings and images are kept.",
+    'update.confirm'                               => "Update to Schauboard v{version} now?
+
+The program files will be replaced. Your slides, settings and images are kept.",
     'update.dismiss_title'                         => 'Hide this version',
     'update.download'                              => '⬇ Download',
     'update.error.auto_not_possible'               => 'Automatic update not possible: {reasons}. Please update manually.',

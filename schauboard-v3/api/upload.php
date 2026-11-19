@@ -30,6 +30,14 @@ $videos = [
 ];
 $allowed = $images + $videos;
 
+// Ohne die PHP-Erweiterung "fileinfo" laesst sich der Dateityp nicht pruefen.
+// Lieber eine verstaendliche Meldung als ein Fatal Error (der als HTML
+// statt JSON zurueckkaeme und im Editor nur "Upload fehlgeschlagen" zeigt).
+if (!class_exists('finfo')) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => t('api.upload.no_fileinfo', 'Die PHP-Erweiterung "fileinfo" fehlt auf dem Server – Uploads sind damit nicht moeglich.')]);
+    exit;
+}
 $finfo = new finfo(FILEINFO_MIME_TYPE);
 $mime = $finfo->file($file['tmp_name']);
 if (!isset($allowed[$mime])) {

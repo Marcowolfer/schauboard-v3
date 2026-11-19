@@ -6,6 +6,7 @@ const TYPE_FIELDS = {
   clock:     ['type','clock_format','show_date','font_size','color','advanced'],
   image:     ['type','src','upload','fit','advanced'],
   gallery:   ['type','gallery','fit','advanced'],
+  pdf:       ['type','pdf','fit','advanced'],
   shape:     ['type','shape_kind','color','opacity','radius','advanced'],
   weather:   ['type','city','forecast','font_size','color','advanced'],
   rss:       ['type','rss_url','rss_count','rss_time','rss_source','font_size','color','advanced'],
@@ -447,8 +448,14 @@ function openModal(blockId) {
   document.getElementById('mShapeKind').value = b.kind || 'rect';
   document.getElementById('mOpacity').value = Number(b.opacity ?? 100);
   document.getElementById('mRadius').value = Number(b.radius ?? 24);
-  document.getElementById('mGalleryList').value = Array.isArray(b.images) ? b.images.join('\n') : '';
+  mediaDraft.gallery = Array.isArray(b.images) ? b.images.slice() : [];
+  renderMediaList('mGalleryItems', mediaDraft.gallery, setGalleryDraft);
   document.getElementById('mGalleryInterval').value = Number(b.interval || 6);
+  mediaDraft.pdf = Array.isArray(b.pages) ? b.pages.slice() : [];
+  renderMediaList('mPdfItems', mediaDraft.pdf, setPdfDraft);
+  document.getElementById('mPdfInterval').value = Number(b.interval || 10);
+  document.getElementById('mPdfFile').dataset.sourceName = b.source_name || '';
+  document.getElementById('mPdfStatus').hidden = true;
   document.getElementById('mClockFormat').value = b.clock_format || 'HH:MM';
   document.getElementById('mShowDate').checked = !!b.show_date;
   document.getElementById('mSpeed').value = Number(b.speed || 60);
@@ -501,8 +508,14 @@ function applyModal() {
     b.show_source = document.getElementById('mRssSource').checked;
   }
   if (t === 'shape') { b.kind = document.getElementById('mShapeKind').value; b.opacity = clamp(Number(document.getElementById('mOpacity').value || 100), 5, 100); b.radius = clamp(Number(document.getElementById('mRadius').value || 0), 0, 400); }
+  if (t === 'pdf') {
+    b.pages = mediaDraft.pdf.slice(0, 100);
+    b.interval = clamp(Number(document.getElementById('mPdfInterval').value || 10), 2, 300);
+    b.fit = document.getElementById('mFit').value;
+    b.source_name = document.getElementById('mPdfFile').dataset.sourceName || '';
+  }
   if (t === 'gallery') {
-    b.images = document.getElementById('mGalleryList').value.split('\n').map(s => s.trim()).filter(Boolean).slice(0, 30);
+    b.images = mediaDraft.gallery.slice(0, 30);
     b.interval = clamp(Number(document.getElementById('mGalleryInterval').value || 6), 2, 120);
     b.fit = document.getElementById('mFit').value;
   }
@@ -563,6 +576,190 @@ function renderTableGrid() {
 function tableNorm() {
   const cols = state.tableDraft.reduce((m, r) => Math.max(m, r.length), 1);
   state.tableDraft = state.tableDraft.map(r => { const c = r.slice(); while (c.length < cols) c.push(''); return c; });
+}
+
+/* ===================== MEDIENLISTE (Diashow + PDF-Seiten) ===================== */
+/* Eine Liste von Bildpfaden als Vorschau-Kacheln: sortieren per Drag, einzeln
+   loeschen. Diashow und PDF-Block teilen sich diese Darstellung - beim PDF sind
+   die "Bilder" die im Browser gerenderten Seiten. */
+function renderMediaList(containerId, bilder, onChange) {
+  const box = document.getElementById(containerId);
+  if (!box) return;
+  box.innerHTML = '';
+  const clearDrop = () => box.querySelectorAll('.media-item').forEach(x => x.classList.remove('drop-before', 'drop-after'));
+
+  bilder.forEach((src, idx) => {
+    const item = document.createElement('div');
+    item.className = 'media-item';
+    item.draggable = true;
+    item.title = src;
+
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = '';
+    img.loading = 'lazy';
+    img.draggable = false;
+    // Kaputte Quelle sichtbar machen, statt eine leere Kachel zu zeigen
+    img.addEventListener('error', () => {
+      item.style.background = 'repeating-linear-gradient(45deg,rgba(255,142,161,.14),rgba(255,142,161,.14) 8px,transparent 8px,transparent 16px)';
+      img.remove();
+    });
+    item.appendChild(img);
+
+    const num = document.createElement('span');
+    num.className = 'mi-num';
+    num.textContent = String(idx + 1);
+    item.appendChild(num);
+
+    const del = document.createElement('button');
+    del.type = 'button';
+    del.className = 'mi-del';
+    del.textContent = '✕';
+    del.title = sbT('media.remove', 'Entfernen');
+    del.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const neu = bilder.slice();
+      neu.splice(idx, 1);
+      onChange(neu);
+    });
+    item.appendChild(del);
+
+    // Sortieren per Drag - gleiches Muster wie Folien- und Playlist-Liste
+    item.addEventListener('dragstart', (e) => {
+      box._dragFrom = idx;
+      item.classList.add('dragging');
+      if (e.dataTransfer) { e.dataTransfer.effectAllowed = 'move'; try { e.dataTransfer.setData('text/plain', String(idx)); } catch (_) {} }
+    });
+    item.addEventListener('dragend', () => { item.classList.remove('dragging'); clearDrop(); box._dragFrom = null; });
+    item.addEventListener('dragover', (e) => {
+      if (box._dragFrom == null) return;
+      e.preventDefault();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+      const r = item.getBoundingClientRect();
+      const after = (e.clientX - r.left) > r.width / 2;   // waagrechtes Raster
+      clearDrop();
+      item.classList.add(after ? 'drop-after' : 'drop-before');
+    });
+    item.addEventListener('drop', (e) => {
+      if (box._dragFrom == null) return;
+      e.preventDefault();
+      const r = item.getBoundingClientRect();
+      const after = (e.clientX - r.left) > r.width / 2;
+      let to = idx + (after ? 1 : 0);
+      const from = box._dragFrom;
+      clearDrop();
+      box._dragFrom = null;
+      if (to > from) to--;
+      if (to === from) return;
+      const neu = bilder.slice();
+      const [weg] = neu.splice(from, 1);
+      neu.splice(Math.max(0, Math.min(neu.length, to)), 0, weg);
+      onChange(neu);
+    });
+
+    box.appendChild(item);
+  });
+}
+
+/* Entwurf der Listen, solange der Dialog offen ist (uebernommen erst bei "Übernehmen"). */
+let mediaDraft = {gallery: [], pdf: []};
+
+function setGalleryDraft(bilder) {
+  mediaDraft.gallery = bilder;
+  renderMediaList('mGalleryItems', bilder, setGalleryDraft);
+  markDirty();
+}
+function setPdfDraft(seiten) {
+  mediaDraft.pdf = seiten;
+  renderMediaList('mPdfItems', seiten, setPdfDraft);
+  markDirty();
+}
+
+/* Eine Datei hochladen -> liefert die gespeicherte URL. */
+async function uploadDatei(file, dateiname) {
+  const fd = new FormData();
+  fd.append('file', file, dateiname || file.name);
+  const res = await fetch('../api/upload.php', {method: 'POST', body: fd});
+  let data = null;
+  try { data = await res.json(); } catch (_) { /* keine JSON-Antwort (z. B. Proxy-413) */ }
+  if (!res.ok || !data || !data.ok) {
+    throw new Error((data && data.error) ? data.error : sbT('toast.upload.failed', 'Upload fehlgeschlagen (HTTP {code}). Datei evtl. zu gross.', {code: res.status}));
+  }
+  return data.url;
+}
+
+/* ===================== PDF-IMPORT ===================== */
+/* Das PDF wird NICHT auf den Server geladen, sondern hier im Browser in
+   Seitenbilder umgewandelt; hochgeladen werden nur die fertigen JPEGs.
+   Vorteile: laeuft auf jedem Server (kein Imagick/Ghostscript noetig), das
+   Display muss kein PDF rendern, und es liegt kein PDF im Web-Verzeichnis. */
+let pdfLibPromise = null;
+function ladePdfLib() {
+  if (!pdfLibPromise) {
+    pdfLibPromise = import('../assets/vendor/pdf.min.mjs').then(lib => {
+      lib.GlobalWorkerOptions.workerSrc = '../assets/vendor/pdf.worker.min.mjs';
+      return lib;
+    });
+  }
+  return pdfLibPromise;
+}
+
+async function pdfImportieren(file) {
+  const status = document.getElementById('mPdfStatus');
+  const bar = document.getElementById('mPdfProgress');
+  const fortschritt = bar ? bar.querySelector('span') : null;
+  const zeige = (txt) => { if (status) { status.hidden = false; status.textContent = txt; } };
+  const setze = (p) => { if (fortschritt) fortschritt.style.width = Math.round(p * 100) + '%'; };
+
+  if (bar) bar.hidden = false;
+  setze(0);
+  zeige(sbT('pdf.loading', 'PDF wird gelesen …'));
+
+  try {
+    const lib = await ladePdfLib();
+    const daten = new Uint8Array(await file.arrayBuffer());
+    const doc = await lib.getDocument({data: daten}).promise;
+    const seiten = [];
+
+    for (let n = 1; n <= doc.numPages; n++) {
+      zeige(sbT('pdf.rendering', 'Seite {n} von {total} wird umgewandelt …', {n: n, total: doc.numPages}));
+      const page = await doc.getPage(n);
+
+      // Zielbreite 1600 px: scharf genug für Full-HD-Displays, aber noch handlich
+      const roh = page.getViewport({scale: 1});
+      const scale = Math.min(3, Math.max(1, 1600 / roh.width));
+      const viewport = page.getViewport({scale});
+
+      const canvas = document.createElement('canvas');
+      canvas.width = Math.round(viewport.width);
+      canvas.height = Math.round(viewport.height);
+      const ctx = canvas.getContext('2d');
+      // Weisser Grund: PDF-Seiten sind transparent, sonst wird JPEG schwarz
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      await page.render({canvasContext: ctx, viewport, background: '#ffffff'}).promise;
+
+      const blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', 0.88));
+      if (!blob) throw new Error(sbT('pdf.render_failed', 'Seite {n} konnte nicht umgewandelt werden.', {n: n}));
+
+      const url = await uploadDatei(blob, 'seite-' + n + '.jpg');
+      seiten.push(url);
+      setze(n / doc.numPages);
+      canvas.width = canvas.height = 0;   // Speicher sofort freigeben
+    }
+
+    setPdfDraft(mediaDraft.pdf.concat(seiten));
+    const nameEl = document.getElementById('mPdfFile');
+    if (nameEl) nameEl.dataset.sourceName = file.name;
+    zeige(sbT('pdf.done', '{n} Seiten übernommen – mit „Übernehmen" speichern.', {n: seiten.length}));
+    toast(sbT('toast.pdf.imported', 'PDF importiert: {n} Seiten ✓', {n: seiten.length}));
+  } catch (err) {
+    zeige('');
+    if (status) status.hidden = true;
+    toast(err.message || String(err), 'err');
+  } finally {
+    if (bar) setTimeout(() => { bar.hidden = true; setze(0); }, 1200);
+  }
 }
 
 /* ===================== VORLAGEN + EXPORT/IMPORT ===================== */
@@ -1123,27 +1320,52 @@ function initEditor() {
   });
 
   // Diashow: mehrere Bilder hochladen -> URLs an die Liste anhaengen (eine pro Zeile).
+  // Diashow: Bilder hochladen -> wandern direkt in die Vorschauliste
   document.getElementById('mGalleryUpload').addEventListener('change', async e => {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
-    const ta = document.getElementById('mGalleryList');
-    let okCount = 0;
+    const neu = [];
     for (const file of files) {
-      const fd = new FormData(); fd.append('file', file);
-      try {
-        const res = await fetch('../api/upload.php', {method: 'POST', body: fd});
-        let data = null;
-        try { data = await res.json(); } catch (_) { /* keine JSON-Antwort */ }
-        if (!res.ok || !data || !data.ok) {
-          throw new Error((data && data.error) ? data.error : sbT('editor.upload.failed', 'Upload fehlgeschlagen (HTTP {status}). Datei evtl. zu gross.', {status: res.status}));
-        }
-        ta.value = (ta.value.trim() ? ta.value.replace(/\s+$/, '') + '\n' : '') + data.url;
-        okCount++;
-      } catch (err) { toast(err.message, 'err'); }
+      try { neu.push(await uploadDatei(file)); }
+      catch (err) { toast(err.message, 'err'); }
     }
-    if (okCount) { markDirty(); toast(okCount === 1 ? sbT('toast.images.uploaded.one', '{n} Bild hochgeladen ✓', {n: okCount}) : sbT('toast.images.uploaded.many', '{n} Bilder hochgeladen ✓', {n: okCount})); }
+    if (neu.length) {
+      setGalleryDraft(mediaDraft.gallery.concat(neu));
+      toast(neu.length === 1 ? sbT('toast.images.uploaded.one', '{n} Bild hochgeladen ✓', {n: neu.length}) : sbT('toast.images.uploaded.many', '{n} Bilder hochgeladen ✓', {n: neu.length}));
+    }
     e.target.value = '';
   });
+
+  // Diashow: Bild per Adresse ergaenzen (fuer extern gehostete Bilder)
+  const galUrlAdd = document.getElementById('mGalleryUrlAdd');
+  if (galUrlAdd) {
+    const uebernehmen = () => {
+      const feld = document.getElementById('mGalleryUrl');
+      const wert = feld.value.trim();
+      if (!wert) return;
+      setGalleryDraft(mediaDraft.gallery.concat([wert]));
+      feld.value = '';
+    };
+    galUrlAdd.addEventListener('click', uebernehmen);
+    document.getElementById('mGalleryUrl').addEventListener('keydown', ev => {
+      if (ev.key === 'Enter') { ev.preventDefault(); uebernehmen(); }
+    });
+  }
+
+  // PDF: Datei waehlen -> im Browser in Seitenbilder umwandeln und hochladen
+  const pdfFeld = document.getElementById('mPdfFile');
+  if (pdfFeld) {
+    pdfFeld.addEventListener('change', async e => {
+      const file = e.target.files && e.target.files[0];
+      e.target.value = '';
+      if (!file) return;
+      if (file.type !== 'application/pdf' && !/\.pdf$/i.test(file.name)) {
+        toast(sbT('pdf.not_a_pdf', 'Bitte eine PDF-Datei wählen.'), 'err');
+        return;
+      }
+      await pdfImportieren(file);
+    });
+  }
 
   // Speichern
   document.getElementById('saveSlides').addEventListener('click', saveSlides);
