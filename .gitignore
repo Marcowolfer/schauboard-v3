@@ -46,6 +46,10 @@ config.local.php
 
 # Dependencies
 vendor/
+# ...ausser den mitgelieferten Browser-Bibliotheken (PDF.js fuer den PDF-Block):
+# die gehoeren ins Release-Paket, sonst fehlt die PDF-Umwandlung beim Nutzer.
+!schauboard-v3/assets/vendor/
+!schauboard-v3/assets/vendor/**
 node_modules/
 
 # Logs
