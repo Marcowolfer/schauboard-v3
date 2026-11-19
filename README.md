@@ -19,13 +19,15 @@ Most self-hosted signage needs Docker, a database, a message broker — or all t
 - **No cloud, no account, no telemetry.** Displays only ever talk to your own server.
 - **No build step.** Plain PHP and vanilla JavaScript — edit a file, reload the page.
 - **English and German**, switchable in the settings.
+- **PDF without extra software** — upload a PDF and its pages are shown in turn. The
+  conversion happens in the editor, so no Imagick or Ghostscript is needed on the server.
 - **Runs where you already have PHP.** Synology Web Station, a Pi, shared hosting, XAMPP.
 - **One editor, one renderer.** The editor preview and the TV use the exact same rendering code,
   so what you design is what you get.
 
 ## Modules
 
-Fifteen block types, freely placeable on a 1920×1080 canvas:
+Sixteen block types, freely placeable on a 1920×1080 canvas:
 
 | | | |
 |---|---|---|
@@ -34,6 +36,7 @@ Fifteen block types, freely placeable on a 1920×1080 canvas:
 | ⛅ Weather (live, optional 3-day forecast) | 📡 RSS/Atom feed | 📰 Ticker |
 | ▦ Table (paste straight from Excel) | 🌐 Web page | 🔳 QR code |
 | ⏳ Countdown | ✨ HTML/CSS animation (sandboxed) | 🎬 Video (file, URL or YouTube) |
+| 📄 PDF (pages shown one after another) | | |
 
 ## Features
 

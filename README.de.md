@@ -20,13 +20,15 @@ der Platte; ein Backup ist das Kopieren eines Verzeichnisses.
 - **Keine Cloud, kein Konto, keine Telemetrie.** Displays sprechen nur mit deinem eigenen Server.
 - **Kein Build-Schritt.** Reines PHP und Vanilla-JavaScript — Datei ändern, Seite neu laden.
 - **Deutsch und Englisch**, in den Einstellungen umschaltbar.
+- **PDF ohne Zusatzsoftware** — ein hochgeladenes PDF wird Seite für Seite gezeigt. Die
+  Umwandlung passiert im Editor, der Server braucht kein Imagick oder Ghostscript.
 - **Läuft dort, wo du schon PHP hast.** Synology Web Station, Raspberry Pi, Webhosting, XAMPP.
 - **Ein Editor, eine Render-Engine.** Vorschau und TV nutzen exakt denselben Code — die Vorschau
   kann gar nicht vom Ergebnis abweichen.
 
 ## Module
 
-Fünfzehn Blocktypen, frei platzierbar auf einer 1920×1080-Bühne:
+Sechzehn Blocktypen, frei platzierbar auf einer 1920×1080-Bühne:
 
 | | | |
 |---|---|---|
@@ -35,6 +37,7 @@ Fünfzehn Blocktypen, frei platzierbar auf einer 1920×1080-Bühne:
 | ⛅ Wetter (live, optional 3-Tage-Vorschau) | 📡 RSS-/Atom-Feed | 📰 Laufband |
 | ▦ Tabelle (direkt aus Excel einfügen) | 🌐 Webseite | 🔳 QR-Code |
 | ⏳ Countdown | ✨ HTML/CSS-Animation (Sandbox) | 🎬 Video (Datei, URL, YouTube) |
+| 📄 PDF (Seiten nacheinander) | | |
 
 ## Funktionen
 
